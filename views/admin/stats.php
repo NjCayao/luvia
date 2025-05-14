@@ -1,3 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?= isset($pageTitle) ? $pageTitle . ' - Admin' : 'Panel de Administración' ?></title>
+    
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="<?= url('plugins/fontawesome-free/css/all.min.css') ?>">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="<?= url('plugins/adminlte/css/adminlte.min.css') ?>">
+    <!-- overlayScrollbars -->
+    <link rel="stylesheet" href="<?= url('plugins/overlayScrollbars/css/OverlayScrollbars.min.css') ?>">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="<?= url('css/admin.css') ?>">
+    
+    <?php if (isset($extraCss)): ?>
+        <?= $extraCss ?>
+    <?php endif; ?>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="<?= url('/admin') ?>" class="nav-link">Dashboard</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="<?= url('/') ?>" class="nav-link" target="_blank">Ver Sitio</a>
+            </li>
+        </ul>
+
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <!-- User Menu -->
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="d-none d-md-inline-block ml-1"><?= htmlspecialchars($_SESSION['user_email'] ?? '') ?></span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                    <a href="<?= url('/logout') ?>" class="dropdown-item">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
+                    </a>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <!-- /.navbar -->
+
+    <!-- Main Sidebar Container -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <!-- Brand Logo -->
+        <a href="<?= url('/admin') ?>" class="brand-link">
+            <span class="brand-text font-weight-light"><?= APP_NAME ?> Admin</span>
+        </a>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Sidebar Menu -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    <li class="nav-item">
+                        <a href="<?= url('/admin') ?>" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], '/admin') !== false && substr_count($_SERVER['REQUEST_URI'], '/') === 1 ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= url('/admin/usuarios') ?>" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], '/admin/usuario') !== false ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Usuarios</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= url('/admin/perfiles') ?>" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], '/admin/perfil') !== false ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-id-card"></i>
+                            <p>Perfiles</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= url('/admin/pagos') ?>" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], '/admin/pago') !== false ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-credit-card"></i>
+                            <p>Pagos</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= url('/admin/suscripciones') ?>" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], '/admin/suscripcion') !== false ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-sync-alt"></i>
+                            <p>Suscripciones</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= url('/admin/planes') ?>" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], '/admin/plan') !== false ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-tags"></i>
+                            <p>Planes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= url('/admin/estadisticas') ?>" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], '/admin/estadisticas') !== false ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-chart-bar"></i>
+                            <p>Estadísticas</p>
+                        </a>
+                    </li>
+                    <li class="nav-header">ACCESOS RÁPIDOS</li>
+                    <li class="nav-item">
+                        <a href="<?= url('/') ?>" class="nav-link" target="_blank">
+                            <i class="nav-icon fas fa-globe"></i>
+                            <p>Ver Sitio</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= url('/logout') ?>" class="nav-link">
+                            <i class="nav-icon fas fa-sign-out-alt"></i>
+                            <p>Cerrar Sesión</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <!-- /.sidebar-menu -->
+        </div>
+        <!-- /.sidebar -->
+    </aside>
+
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0"><?= isset($pageHeader) ? $pageHeader : 'Dashboard' ?></h1>
+                    </div><!-- /.col -->
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="<?= url('/admin') ?>">Inicio</a></li>
+                            <?php if (isset($pageHeader) && $pageHeader !== 'Dashboard'): ?>
+                                <li class="breadcrumb-item active"><?= $pageHeader ?></li>
+                            <?php endif; ?>
+                        </ol>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </div>
+        <!-- /.content-header -->
+
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                <!-- Flash Messages -->
+                <?php displayFlashMessage(); ?>
+                
+                <!-- Main content goes here -->
+                <?php require_once $viewFile ?? ''; ?>
+            </div><!-- /.container-fluid -->
+        </section>
+        <!-- /.content -->
+    </div>
+    <!-- /.content-wrapper -->
+
+    <footer class="main-footer">
+        <div class="float-right d-none d-sm-block">
+            <b>Versión</b> 1.0.0
+        </div>
+        <strong>Copyright &copy; <?= date('Y') ?> <a href="<?= url('/') ?>"><?= APP_NAME ?></a>.</strong> Todos los derechos reservados.
+    </footer>
+</div>
+<!-- ./wrapper -->
+
 <!-- Selector de período -->
 <div class="card mb-4">
     <div class="card-header">
@@ -438,4 +622,217 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Nuevos usuarios',
                 data: newUsersData,
-                backgroundCol
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                pointRadius: 3,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Configurar gráfico de géneros
+    const genderCtx = document.getElementById('genderChart').getContext('2d');
+    new Chart(genderCtx, {
+        type: 'doughnut',
+        data: {
+            labels: genderLabels,
+            datasets: [{
+                data: genderData,
+                backgroundColor: [
+                    'rgb(242, 126, 181)', // rosa para mujeres
+                    'rgb(52, 144, 220)',  // azul para hombres
+                    'rgb(142, 68, 173)'   // morado para trans
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+    
+    // Configurar gráfico de tráfico
+    const trafficCtx = document.getElementById('trafficChart').getContext('2d');
+    new Chart(trafficCtx, {
+        type: 'line',
+        data: {
+            labels: trafficDates,
+            datasets: [
+                {
+                    label: 'Vistas',
+                    data: viewsData,
+                    backgroundColor: 'rgba(60, 141, 188, 0.2)',
+                    borderColor: 'rgba(60, 141, 188, 1)',
+                    pointRadius: 3,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Clicks',
+                    data: clicksData,
+                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    pointRadius: 3,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Tasa de conversión (%)',
+                    data: conversionData,
+                    backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    pointRadius: 3,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    beginAtZero: true
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.datasetIndex === 2) {
+                                return label + context.parsed.y.toFixed(2) + '%';
+                            }
+                            return label + context.parsed.y;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Configurar gráfico de ciudades
+    const cityCtx = document.getElementById('cityChart').getContext('2d');
+    new Chart(cityCtx, {
+        type: 'bar',
+        data: {
+            labels: cityLabels,
+            datasets: [{
+                label: 'Perfiles por ciudad',
+                data: cityData,
+                backgroundColor: 'rgba(60, 141, 188, 0.7)',
+                borderColor: 'rgba(60, 141, 188, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Configurar gráfico de planes
+    const planCtx = document.getElementById('planChart').getContext('2d');
+    new Chart(planCtx, {
+        type: 'pie',
+        data: {
+            labels: planLabels,
+            datasets: [{
+                data: planData,
+                backgroundColor: [
+                    'rgba(52, 144, 220, 0.8)',
+                    'rgba(56, 193, 114, 0.8)',
+                    'rgba(255, 159, 64, 0.8)',
+                    'rgba(239, 83, 80, 0.8)',
+                    'rgba(17, 135, 207, 0.8)',
+                    'rgba(155, 89, 182, 0.8)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+});
+</script>
+
+<!-- jQuery -->
+<script src="<?= url('plugins/jquery/jquery.min.js') ?>"></script>
+<!-- Bootstrap 4 -->
+<script src="<?= url('plugins/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
+<!-- ChartJS -->
+<script src="<?= url('plugins/chart.js/Chart.min.js') ?>"></script>
+<!-- AdminLTE App -->
+<script src="<?= url('plugins/adminlte/js/adminlte.min.js') ?>"></script>
+<!-- overlayScrollbars -->
+<script src="<?= url('plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js') ?>"></script>
+
+<?php if (isset($extraJs)): ?>
+    <?= $extraJs ?>
+<?php endif; ?>
+
+</body>
+</html>

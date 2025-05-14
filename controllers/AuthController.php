@@ -175,7 +175,7 @@ class AuthController {
     /**
      * Procesa el registro de usuario
      */
-    public function processRegister() {
+        public function processRegister() {
         // Si ya está logueado, redirigir al dashboard
         if (isLoggedIn()) {
             redirect('/usuario/dashboard');
@@ -296,6 +296,12 @@ class AuthController {
             // Guardar ID en sesión para la verificación
             $_SESSION['pending_verification_id'] = $userId;
             
+            // Crear suscripción de prueba para anunciantes
+            if ($userType === 'advertiser') {
+                require_once __DIR__ . '/../models/Subscription.php';
+                Subscription::createTrial($userId);
+            }
+            
             echo json_encode([
                 'success' => true,
                 'message' => 'Registro exitoso. Por favor verifique su cuenta.',
@@ -305,10 +311,6 @@ class AuthController {
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Error al registrar: ' . $e->getMessage()]);
-        }
-
-        if ($userType === 'advertiser') {
-            Subscription::createTrial($userId);
         }
         
         exit;

@@ -166,3 +166,36 @@
                 <?php displayFlashMessage(); ?>
                 
                 <!-- Main content goes here -->
+                <?php require_once $viewFile ?? ''; ?>
+            </div><!-- /.container-fluid -->
+        </section>
+        <!-- /.content -->
+    </div>
+    <!-- /.content-wrapper -->
+
+    <footer class="main-footer">
+        <div class="float-right d-none d-sm-block">
+            <b>Versión</b> 1.0.0
+        </div>
+        <strong>Copyright &copy; <?= date('Y') ?> <a href="<?= url('/') ?>"><?= APP_NAME ?></a>.</strong> Todos los derechos reservados.
+    </footer>
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery -->
+<script src="<?= url('plugins/jquery/jquery.min.js') ?>"></script>
+<!-- Bootstrap 4 -->
+<script src="<?= url('plugins/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
+<!-- ChartJS -->
+<script src="<?= url('plugins/chart.js/Chart.min.js') ?>"></script>
+<!-- AdminLTE App -->
+<script src="<?= url('plugins/adminlte/js/adminlte.min.js') ?>"></script>
+<!-- overlayScrollbars -->
+<script src="<?= url('plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js') ?>"></script>
+
+<?php if (isset($extraJs)): ?>
+    <?= $extraJs ?>
+<?php endif; ?>
+
+</body>
+</html>
