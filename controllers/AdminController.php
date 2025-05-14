@@ -35,20 +35,58 @@ class AdminController
      */
     public function dashboard()
     {
-        // Estadísticas básicas - inicializar con valores por defecto
+        // Establecer valores predeterminados para las estadísticas
         $totalUsers = 0;
         $totalAdvertisers = 0;
         $totalVisitors = 0;
         $totalProfiles = 0;
 
-        // Obtener estadísticas si los métodos están disponibles
+        // Obtener estadísticas
         try {
+            // Contar usuarios totales
             $totalUsers = User::count();
-            $totalAdvertisers = User::count(['user_type' => 'advertiser']);
-            $totalVisitors = User::count(['user_type' => 'visitor']);
-            $totalProfiles = Profile::count();
+
+            // Contar anunciantes - asegurarse de que el filtro funcione
+            try {
+                $totalAdvertisers = User::count(['user_type' => 'advertiser']);
+            } catch (Exception $e) {
+                error_log("Error al contar anunciantes: " . $e->getMessage());
+                // Alternativa si el filtro falla
+                $conn = getDbConnection();
+                $stmt = $conn->prepare("SELECT COUNT(*) as total FROM users WHERE user_type = 'advertiser'");
+                $stmt->execute();
+                $result = $stmt->fetch();
+                $totalAdvertisers = (int)($result['total'] ?? 0);
+            }
+
+            // Contar visitantes - asegurarse de que el filtro funcione
+            try {
+                $totalVisitors = User::count(['user_type' => 'visitor']);
+            } catch (Exception $e) {
+                error_log("Error al contar visitantes: " . $e->getMessage());
+                // Alternativa si el filtro falla
+                $conn = getDbConnection();
+                $stmt = $conn->prepare("SELECT COUNT(*) as total FROM users WHERE user_type = 'visitor'");
+                $stmt->execute();
+                $result = $stmt->fetch();
+                $totalVisitors = (int)($result['total'] ?? 0);
+            }
+
+            // Contar perfiles
+            try {
+                $totalProfiles = Profile::count();
+            } catch (Exception $e) {
+                error_log("Error al contar perfiles: " . $e->getMessage());
+                // Alternativa si el método falla
+                $conn = getDbConnection();
+                $stmt = $conn->prepare("SELECT COUNT(*) as total FROM profiles");
+                $stmt->execute();
+                $result = $stmt->fetch();
+                $totalProfiles = (int)($result['total'] ?? 0);
+            }
         } catch (Exception $e) {
-            // Manejar errores o simplemente usar los valores por defecto
+            error_log("Error general al obtener estadísticas: " . $e->getMessage());
+            // Usar valores predeterminados ya establecidos
         }
 
         // Usuarios recientes
@@ -56,7 +94,7 @@ class AdminController
         try {
             $recentUsers = User::getAll(5, 0);
         } catch (Exception $e) {
-            // Manejar errores
+            error_log("Error al obtener usuarios recientes: " . $e->getMessage());
         }
 
         // Pagos recientes
@@ -64,7 +102,7 @@ class AdminController
         try {
             $recentPayments = Payment::getAll(5, 0);
         } catch (Exception $e) {
-            // Manejar errores
+            error_log("Error al obtener pagos recientes: " . $e->getMessage());
         }
 
         // Suscripciones por vencer
@@ -72,7 +110,7 @@ class AdminController
         try {
             $expiringSubscriptions = Subscription::getAboutToExpire();
         } catch (Exception $e) {
-            // Manejar errores
+            error_log("Error al obtener suscripciones por vencer: " . $e->getMessage());
         }
 
         // Perfiles más vistos
@@ -80,7 +118,7 @@ class AdminController
         try {
             $topProfiles = Profile::getMostViewed(5);
         } catch (Exception $e) {
-            // Manejar errores
+            error_log("Error al obtener perfiles más vistos: " . $e->getMessage());
         }
 
         $pageTitle = 'Panel de Administración';
@@ -131,7 +169,7 @@ class AdminController
         $pageHeader = 'Usuarios';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/users.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -369,7 +407,7 @@ class AdminController
         $pageHeader = 'Perfiles';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/profiles.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -656,7 +694,7 @@ class AdminController
         $pageHeader = 'Pagos';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+       $viewFile = __DIR__ . '/../views/admin/payments.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -698,50 +736,53 @@ class AdminController
      * Gestión de suscripciones
      */
     public function subscriptions()
-    {
-        // Filtros
-        $status = $_GET['status'] ?? '';
-        $userType = $_GET['user_type'] ?? '';
-        $search = $_GET['search'] ?? '';
+{
+    // Filtros
+    $status = $_GET['status'] ?? '';
+    $userType = $_GET['user_type'] ?? '';
+    $search = $_GET['search'] ?? '';
 
-        // Paginación
-        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-        $limit = 20;
-        $offset = ($page - 1) * $limit;
+    // Paginación
+    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $limit = 20;
+    $offset = ($page - 1) * $limit;
 
-        // Preparar filtros
-        $filters = [];
-        if (!empty($status)) {
-            $filters['status'] = $status;
-        }
-        if (!empty($userType)) {
-            $filters['user_type'] = $userType;
-        }
-        if (!empty($search)) {
-            $filters['search'] = $search;
-        }
-
-        // Obtener suscripciones
-        $subscriptions = Subscription::getAll($limit, $offset, $filters);
-        $totalSubscriptions = Subscription::count($filters);
-
-        // Calcular páginas
-        $totalPages = ceil($totalSubscriptions / $limit);
-
-        // Estadísticas básicas
-        $stats = [
-            'active_count' => Subscription::count(array_merge($filters, ['status' => 'active'])),
-            'trial_count' => Subscription::count(array_merge($filters, ['status' => 'trial'])),
-            'expired_count' => Subscription::count(array_merge($filters, ['status' => 'expired'])),
-            'auto_renew_count' => Subscription::countAutoRenew($filters)
-        ];
-
-        $pageTitle = 'Gestión de Suscripciones';
-        $pageHeader = 'Suscripciones';
-
-        require_once __DIR__ . '/../views/layouts/admin.php';
-        require_once __DIR__ . '/../views/admin/subscriptions.php';
+    // Preparar filtros
+    $filters = [];
+    if (!empty($status)) {
+        $filters['status'] = $status;
     }
+    if (!empty($userType)) {
+        $filters['user_type'] = $userType;
+    }
+    if (!empty($search)) {
+        $filters['search'] = $search;
+    }
+
+    // Obtener suscripciones
+    $subscriptions = Subscription::getAll($limit, $offset, $filters);
+    $totalSubscriptions = Subscription::count($filters);
+
+    // Calcular páginas
+    $totalPages = ceil($totalSubscriptions / $limit);
+
+    // Estadísticas básicas
+    $stats = [
+        'active_count' => Subscription::count(array_merge($filters, ['status' => 'active'])),
+        'trial_count' => Subscription::count(array_merge($filters, ['status' => 'trial'])),
+        'expired_count' => Subscription::count(array_merge($filters, ['status' => 'expired'])),
+        'auto_renew_count' => Subscription::countAutoRenew($filters)
+    ];
+
+    $pageTitle = 'Gestión de Suscripciones';
+    $pageHeader = 'Suscripciones';
+
+    // Define la ruta al archivo de vista específica
+    $viewFile = __DIR__ . '/../views/admin/subscriptions.php';
+
+    // Renderiza la vista principal (que incluirá el contenido específico)
+    require_once __DIR__ . '/../views/layouts/admin.php';
+}
 
     /**
      * Ver detalle de suscripción
@@ -802,7 +843,7 @@ class AdminController
         $pageHeader = 'Planes';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/plans.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -1090,7 +1131,7 @@ class AdminController
         $pageHeader = 'Estadísticas Generales';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/stats.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';

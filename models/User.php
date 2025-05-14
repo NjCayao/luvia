@@ -143,7 +143,7 @@ class User {
         return $stmt->fetchAll();
     }
     
-    // Contar usuarios
+    // Contar usuarios - VERSIÓN CORREGIDA
     public static function count($filters = []) {
         $conn = getDbConnection();
         
@@ -153,17 +153,17 @@ class User {
         
         // Aplicar filtros
         if (!empty($filters)) {
-            if (isset($filters['user_type'])) {
+            if (isset($filters['user_type']) && !empty($filters['user_type'])) {
                 $whereConditions[] = "user_type = ?";
                 $params[] = $filters['user_type'];
             }
             
-            if (isset($filters['status'])) {
+            if (isset($filters['status']) && !empty($filters['status'])) {
                 $whereConditions[] = "status = ?";
                 $params[] = $filters['status'];
             }
             
-            if (isset($filters['search'])) {
+            if (isset($filters['search']) && !empty($filters['search'])) {
                 $whereConditions[] = "(email LIKE ? OR phone LIKE ?)";
                 $params[] = "%{$filters['search']}%";
                 $params[] = "%{$filters['search']}%";
@@ -179,7 +179,38 @@ class User {
         $stmt->execute($params);
         $result = $stmt->fetch();
         
-        return (int)$result['total'];
+        return (int)($result['total'] ?? 0);
     }
     
+    // Método adicional para contar usuarios nuevos
+    public static function countNewUsers($startDate, $endDate) {
+        $conn = getDbConnection();
+        $sql = "SELECT COUNT(*) as total FROM users WHERE created_at BETWEEN ? AND ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$startDate, $endDate]);
+        $result = $stmt->fetch();
+        return (int)($result['total'] ?? 0);
+    }
+    
+    // Método para obtener el crecimiento de usuarios
+    public static function getUserGrowth($period = 'month') {
+        $conn = getDbConnection();
+        
+        $periodDays = 30; // Default para mes
+        if ($period === 'week') {
+            $periodDays = 7;
+        } else if ($period === 'year') {
+            $periodDays = 365;
+        }
+        
+        $currentDate = date('Y-m-d H:i:s');
+        $pastDate = date('Y-m-d H:i:s', strtotime("-$periodDays days"));
+        
+        $sql = "SELECT COUNT(*) as total FROM users WHERE created_at BETWEEN ? AND ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$pastDate, $currentDate]);
+        $result = $stmt->fetch();
+        
+        return (int)($result['total'] ?? 0);
+    }
 }
