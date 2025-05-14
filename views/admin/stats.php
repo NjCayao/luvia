@@ -166,7 +166,7 @@
                 <?php displayFlashMessage(); ?>
                 
                 <!-- Main content goes here -->
-                <?php require_once $viewFile ?? ''; ?>
+                <?php isset($viewFile) && !empty($viewFile) && file_exists($viewFile) ? require_once $viewFile : ''; ?>
             </div><!-- /.container-fluid -->
         </section>
         <!-- /.content -->

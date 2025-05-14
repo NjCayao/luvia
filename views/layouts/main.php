@@ -127,7 +127,7 @@
                 
                 <!-- Contenido principal -->
                 <div class="main-content">
-                    <?php require_once $viewFile ?? ''; ?>
+                    <?php isset($viewFile) && !empty($viewFile) && file_exists($viewFile) ? require_once $viewFile : ''; ?>
                 </div>
                 <!-- /.main-content -->
             </div>

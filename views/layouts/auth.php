@@ -31,12 +31,8 @@
         
         <!-- Card -->
         <div class="card">
-            <div class="card-body login-card-body">
-                <?php 
-                // Aquí se incluirá el contenido específico de cada vista de autenticación
-                // Como login.php, register.php, forgot-password.php, etc.
-                require_once $viewFile ?? '';
-                ?>
+            <div class="card-body login-card-body">       
+                <?php isset($viewFile) && !empty($viewFile) && file_exists($viewFile) ? require_once $viewFile : ''; ?>
             </div>
             <!-- /.login-card-body -->
         </div>

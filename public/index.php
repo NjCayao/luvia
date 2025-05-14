@@ -14,10 +14,6 @@ $requestUri = $_SERVER['REQUEST_URI'];
 $appUrlPath = parse_url(APP_URL, PHP_URL_PATH) ?: '';
 $path = '/';
 
-// Para depuración (puedes quitar estas líneas después)
-// echo "<!-- Debug - Request URI: " . htmlspecialchars($requestUri) . " -->\n";
-// echo "<!-- Debug - APP_URL Path: " . htmlspecialchars($appUrlPath) . " -->\n";
-
 // Eliminar parámetros de consulta y normalizar la ruta
 if ($requestUri !== '/') {
     $urlPath = parse_url($requestUri, PHP_URL_PATH);

@@ -149,11 +149,10 @@ class User {
         
         $sql = "SELECT COUNT(*) as total FROM users";
         $params = [];
+        $whereConditions = [];
         
         // Aplicar filtros
         if (!empty($filters)) {
-            $whereConditions = [];
-            
             if (isset($filters['user_type'])) {
                 $whereConditions[] = "user_type = ?";
                 $params[] = $filters['user_type'];
@@ -164,15 +163,23 @@ class User {
                 $params[] = $filters['status'];
             }
             
-            if (!empty($whereConditions)) {
-                $sql .= " WHERE " . implode(' AND ', $whereConditions);
+            if (isset($filters['search'])) {
+                $whereConditions[] = "(email LIKE ? OR phone LIKE ?)";
+                $params[] = "%{$filters['search']}%";
+                $params[] = "%{$filters['search']}%";
             }
+        }
+        
+        // Construir condición WHERE
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(' AND ', $whereConditions);
         }
         
         $stmt = $conn->prepare($sql);
         $stmt->execute($params);
         $result = $stmt->fetch();
         
-        return $result['total'];
+        return (int)$result['total'];
     }
+    
 }

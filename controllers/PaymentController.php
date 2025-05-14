@@ -126,6 +126,79 @@ class PaymentController {
     public function processYapePayment() {
         // Implementación similar a processCardPayment
         // pero usando createYapePaymentSession
+        if (!isLoggedIn()) {
+            echo json_encode(['error' => 'Usuario no autenticado']);
+            exit;
+        }
+        
+        // Obtener datos
+        $planId = $_POST['plan_id'] ?? 0;
+        
+        // Validar plan
+        $plan = Plan::getById($planId);
+        
+        if (!$plan) {
+            echo json_encode(['error' => 'Plan inválido']);
+            exit;
+        }
+        
+        // Obtener usuario
+        $user = User::getById($_SESSION['user_id']);
+        
+        // Generar ID de orden
+        $orderId = 'ORD-' . time() . '-' . $user['id'];
+        
+        try {
+            // Crear registro de pago
+            $paymentId = Payment::create([
+                'user_id' => $user['id'],
+                'plan_id' => $planId,
+                'amount' => $plan['price'],
+                'currency' => 'PEN',
+                'payment_method' => 'card',
+                'payment_status' => 'pending',
+                'order_id' => $orderId
+            ]);
+            
+            // Crear sesión en Izipay
+            $session = $this->izipayService->createYapePaymentSession(
+                $plan['price'],
+                $orderId,
+                $user['email'],
+                'Plan ' . $plan['name'] . ' - ' . $plan['duration'] . ' días'
+            );
+            
+            // Actualizar pago con ID de sesión
+            Payment::update($paymentId, [
+                'izipay_session_id' => $session['sessionId']
+            ]);
+            
+            // Devolver respuesta
+            echo json_encode([
+                'success' => true,
+                'redirect_url' => $session['redirectUrl'],
+                'session_id' => $session['sessionId']
+            ]);
+            
+        } catch (Exception $e) {
+            // Log del error
+            error_log('Error en pago con tarjeta: ' . $e->getMessage());
+            
+            // Actualizar pago si existe
+            if (isset($paymentId)) {
+                Payment::update($paymentId, [
+                    'payment_status' => 'failed',
+                    'error_message' => $e->getMessage()
+                ]);
+            }
+            
+            // Devolver error
+            echo json_encode([
+                'success' => false,
+                'error' => 'Error al procesar el pago: ' . $e->getMessage()
+            ]);
+        }
+        exit
     }
     
     // Manejar confirmación de pago

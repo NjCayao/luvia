@@ -79,3 +79,22 @@ luvia/
     ├── photos/                  # Fotos de perfiles
     ├── videos/                  # Videos de perfiles
     └── verification/            # Documentos de verificación
+
+
+
+Iniciar sesión como administrador:
+
+Email: admin@example.com
+Contraseña: password
+
+
+Iniciar sesión como anunciante:
+
+Email: maria@example.com
+Contraseña: password
+
+
+Iniciar sesión como visitante:
+
+Email: cliente@example.com
+Contraseña: password
