@@ -1,0 +1,85 @@
+/* public/css/style.css */
+
+/* Colores principales */
+:root {
+    --primary-color: #e83e8c;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --info-color: #17a2b8;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+}
+
+/* Clase para navbar rosa */
+.navbar-pink {
+    background-color: var(--primary-color);
+}
+
+/* Estilos para la página de autenticación */
+.login-page, .register-page {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+}
+
+.login-box, .register-box {
+    width: 360px;
+}
+
+.login-card-body, .register-card-body {
+    border-radius: 10px;
+}
+
+.login-logo a, .register-logo a {
+    color: var(--primary-color);
+}
+
+/* Botones personalizados */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #d33b7e;
+    border-color: #d33b7e;
+}
+
+.btn-outline-light:hover {
+    color: var(--primary-color);
+}
+
+/* Estilo para verificación */
+#code {
+    letter-spacing: 0.5em;
+    text-align: center;
+    font-size: 1.2em;
+}
+
+/* Mensajes de error */
+.invalid-feedback {
+    display: block;
+}
+
+/* Animaciones */
+.login-box, .register-box {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .login-box, .register-box {
+        width: 90%;
+    }
+}
