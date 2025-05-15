@@ -6,7 +6,7 @@
                 <h3 class="card-title">Filtros</h3>
             </div>
             <div class="card-body">
-                <form action="<?= url('/admin/usuarios') ?>" method="GET" class="row">
+                <form action="<?= url('/admin/toggle_user_status.php') ?>" method="POST" style="display: inline;">
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="type">Tipo de usuario</label>
@@ -104,11 +104,11 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <?php if ($user['user_type'] !== 'admin'): ?>
-                                        <form action="<?= url('admin/usuario/cambiar-estado') ?>" method="POST" style="display: inline;">
-                                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                                        <form action="<?= url('/toggle_user_status.php') ?>" method="POST" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
                                             <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
                                             <input type="hidden" name="status" value="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>">
-                                            <button type="submit" class="btn btn-sm <?= $user['status'] === 'active' ? 'btn-danger' : 'btn-success' ?>"
+                                            <button type="submit" class="btn btn-sm <?= $user['status'] === 'active' ? 'btn-warning' : 'btn-success' ?>"
                                                 title="<?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?>">
                                                 <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
                                             </button>
@@ -186,6 +186,54 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para eliminar usuario -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" role="dialog" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">Eliminar Usuario</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro que deseas eliminar al usuario "<span id="userName"></span>"?</p>
+                <p class="text-danger">Esta acción marcará al usuario como eliminado y no podrá acceder al sistema.</p>
+                <form id="deleteUserForm" method="POST" action="<?= url('/delete_user.php') ?>">
+                    <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+                    <input type="hidden" name="user_id" id="userId" value="">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteUser">Eliminar Usuario</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejar botones de eliminación de usuario
+        document.querySelectorAll('.delete-user-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const userId = this.getAttribute('data-id');
+                const userName = this.getAttribute('data-name');
+
+                document.getElementById('userId').value = userId;
+                document.getElementById('userName').textContent = userName;
+
+                $('#deleteUserModal').modal('show');
+            });
+        });
+
+        // Confirmar eliminación
+        document.getElementById('confirmDeleteUser').addEventListener('click', function() {
+            document.getElementById('deleteUserForm').submit();
+        });
+    });
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -213,9 +213,7 @@ class AdminController
         require_once __DIR__ . '/../views/layouts/admin.php';
     }
 
-    /**
-     * Editar usuario - Asegurarse que este método esté correctamente implementado
-     */
+
     /**
      * Editar usuario
      */
@@ -223,38 +221,56 @@ class AdminController
     {
         $userId = $params['id'] ?? 0;
 
-        // Obtener usuario
-        $user = User::getById($userId);
+        // Para depuración
+        error_log("editUser llamado con ID: $userId");
 
-        if (!$user) {
-            setFlashMessage('danger', 'Usuario no encontrado');
+        try {
+            // Obtener usuario directamente de la base de datos
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            error_log("Usuario encontrado: " . ($user ? json_encode($user) : 'No encontrado'));
+
+            if (!$user) {
+                setFlashMessage('danger', 'Usuario no encontrado');
+                redirect('/admin/usuarios');
+                exit;
+            }
+
+            $pageTitle = 'Editar Usuario';
+            $pageHeader = 'Editar Usuario';
+
+            // Define la ruta al archivo de vista específica
+            $viewFile = __DIR__ . '/../views/admin/user_edit.php';
+
+            // Verificar si el archivo existe
+            if (!file_exists($viewFile)) {
+                error_log("Vista no encontrada: $viewFile");
+                setFlashMessage('danger', 'Error interno: Archivo de vista no encontrado');
+                redirect('/admin/usuarios');
+                exit;
+            }
+
+            // Renderiza la vista principal (que incluirá el contenido específico)
+            require_once __DIR__ . '/../views/layouts/admin.php';
+        } catch (Exception $e) {
+            error_log("Error en editUser: " . $e->getMessage());
+            setFlashMessage('danger', 'Error al cargar datos del usuario: ' . $e->getMessage());
             redirect('/admin/usuarios');
             exit;
         }
-
-        $pageTitle = 'Editar Usuario';
-        $pageHeader = 'Editar Usuario';
-
-        // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/user_edit.php';
-
-        // Verificar si el archivo existe
-        if (!file_exists($viewFile)) {
-            error_log("Vista no encontrada: $viewFile");
-            setFlashMessage('danger', 'Error interno: Archivo de vista no encontrado');
-            redirect('/admin/usuarios');
-            exit;
-        }
-
-        // Renderiza la vista principal (que incluirá el contenido específico)
-        require_once __DIR__ . '/../views/layouts/admin.php';
     }
 
     /**
-     * Actualizar usuario - Asegurarse que el procesamiento del formulario sea correcto
+     * Actualizar usuario
      */
     public function updateUser()
     {
+        // Establecer encabezado de tipo de contenido JSON
+        header('Content-Type: application/json');
+
         // Verificar método
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
@@ -274,6 +290,7 @@ class AdminController
         $status = $_POST['status'] ?? '';
         $email = $_POST['email'] ?? '';
         $phone = $_POST['phone'] ?? '';
+        $password = $_POST['password'] ?? '';
 
         // Validar datos
         $errors = [];
@@ -290,11 +307,8 @@ class AdminController
 
         if (empty($email)) {
             $errors['email'] = 'El correo electrónico es obligatorio';
-        } else {
-            // Validar formato de email
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $errors['email'] = 'Formato de correo electrónico inválido';
-            }
+        } else if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Formato de correo electrónico inválido';
         }
 
         if (empty($phone)) {
@@ -311,59 +325,161 @@ class AdminController
         // Limpiar teléfono
         $phone = preg_replace('/\D/', '', $phone);
 
-        // Verificar que el usuario exista
-        $user = User::getById($userId);
+        try {
+            // Verificar que el usuario exista
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$user) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Usuario no encontrado']);
+            if (!$user) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Usuario no encontrado']);
+                exit;
+            }
+
+            // Verificar si el email ya existe y no es del mismo usuario
+            if ($email !== $user['email']) {
+                $stmt = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
+                $stmt->execute([$email, $userId]);
+                if ($stmt->fetch()) {
+                    http_response_code(422);
+                    echo json_encode(['errors' => ['email' => 'Este correo electrónico ya está registrado']]);
+                    exit;
+                }
+            }
+
+            // Verificar si el teléfono ya existe y no es del mismo usuario
+            if ($phone !== $user['phone']) {
+                $stmt = $conn->prepare("SELECT id FROM users WHERE phone = ? AND id != ?");
+                $stmt->execute([$phone, $userId]);
+                if ($stmt->fetch()) {
+                    http_response_code(422);
+                    echo json_encode(['errors' => ['phone' => 'Este teléfono ya está registrado']]);
+                    exit;
+                }
+            }
+
+            // Preparar datos de usuario
+            $userData = [
+                'status' => $status,
+                'email' => $email,
+                'phone' => $phone
+            ];
+
+            // Si se proporcionó una nueva contraseña, actualizarla
+            if (!empty($password)) {
+                $userData['password'] = password_hash($password, PASSWORD_DEFAULT);
+            }
+
+            // Actualizar usuario directamente con SQL
+            $updateFields = [];
+            $updateParams = [];
+
+            foreach ($userData as $key => $value) {
+                $updateFields[] = "$key = ?";
+                $updateParams[] = $value;
+            }
+
+            $updateParams[] = $userId; // Para la condición WHERE
+
+            $sql = "UPDATE users SET " . implode(", ", $updateFields) . " WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            $result = $stmt->execute($updateParams);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Usuario actualizado correctamente',
+                    'redirect' => url('/admin/usuario/' . $userId)
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Error al actualizar usuario']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al actualizar usuario: ' . $e->getMessage()]);
+        }
+
+        exit;
+    }
+
+    /**
+     * Cambiar estado de usuario (activo/suspendido)
+     */
+    public function toggleUserStatus()
+    {
+        // Verificar método
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            setFlashMessage('danger', 'Método no permitido');
+            redirect('/admin/usuarios');
             exit;
         }
 
-        // Verificar si el email ya existe y no es del mismo usuario
-        if ($email !== $user['email']) {
-            $existingUser = User::getByEmail($email);
-            if ($existingUser && $existingUser['id'] != $userId) {
-                http_response_code(422);
-                echo json_encode(['errors' => ['email' => 'Este correo electrónico ya está registrado']]);
-                exit;
-            }
+        // Verificar token CSRF
+        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+            setFlashMessage('danger', 'Token CSRF inválido');
+            redirect('/admin/usuarios');
+            exit;
         }
 
-        // Verificar si el teléfono ya existe y no es del mismo usuario
-        if ($phone !== $user['phone']) {
-            $existingUser = User::getByPhone($phone);
-            if ($existingUser && $existingUser['id'] != $userId) {
-                http_response_code(422);
-                echo json_encode(['errors' => ['phone' => 'Este teléfono ya está registrado']]);
-                exit;
-            }
+        // Obtener datos
+        $userId = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+        $status = isset($_POST['status']) ? $_POST['status'] : '';
+
+        // Validar datos
+        if ($userId <= 0) {
+            setFlashMessage('danger', 'ID de usuario inválido');
+            redirect('/admin/usuarios');
+            exit;
         }
 
-        // Actualizar usuario
-        $userData = [
-            'status' => $status,
-            'email' => $email,
-            'phone' => $phone
-        ];
-
-        // Si se proporcionó una nueva contraseña, actualizarla
-        if (!empty($_POST['password'])) {
-            $userData['password'] = password_hash($_POST['password'], PASSWORD_DEFAULT);
+        if (!in_array($status, ['active', 'suspended'])) {
+            setFlashMessage('danger', 'Estado inválido');
+            redirect('/admin/usuarios');
+            exit;
         }
 
         try {
-            User::update($userId, $userData);
+            // Verificar que el usuario exista
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            echo json_encode([
-                'success' => true,
-                'message' => 'Usuario actualizado correctamente',
-                'redirect' => url('/admin/usuario/' . $userId)
-            ]);
+            if (!$user) {
+                setFlashMessage('danger', 'Usuario no encontrado');
+                redirect('/admin/usuarios');
+                exit;
+            }
+
+            // No permitir cambiar el estado de un administrador
+            if ($user['user_type'] === 'admin') {
+                setFlashMessage('danger', 'No se puede cambiar el estado de un administrador');
+                redirect('/admin/usuarios');
+                exit;
+            }
+
+            // Actualizar estado
+            $stmt = $conn->prepare("UPDATE users SET status = ? WHERE id = ?");
+            $result = $stmt->execute([$status, $userId]);
+
+            if ($result) {
+                $message = $status === 'active' ? 'Usuario activado correctamente' : 'Usuario suspendido correctamente';
+                setFlashMessage('success', $message);
+            } else {
+                setFlashMessage('danger', 'No se pudo actualizar el estado del usuario');
+            }
         } catch (Exception $e) {
-            error_log('Error al actualizar usuario: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Error al actualizar usuario: ' . $e->getMessage()]);
+            setFlashMessage('danger', 'Error al cambiar el estado del usuario: ' . $e->getMessage());
+        }
+
+        // Redirigir de vuelta
+        if (isset($_POST['redirect_url']) && !empty($_POST['redirect_url'])) {
+            redirect($_POST['redirect_url']);
+        } else {
+            redirect('/admin/usuarios');
         }
 
         exit;
@@ -580,26 +696,22 @@ class AdminController
             exit;
         }
 
-        // Actualizar perfil
-        $profileData = [
-            'name' => $name,
-            'gender' => $gender,
-            'description' => $description,
-            'whatsapp' => $whatsapp,
-            'city' => $city,
-            'location' => $location,
-            'schedule' => $schedule,
-            'is_verified' => $isVerified
-        ];
-
         try {
-            Profile::update($profileId, $profileData);
+            // Actualizar perfil directamente en la base de datos
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("UPDATE profiles SET name = ?, gender = ?, description = ?, whatsapp = ?, city = ?, location = ?, schedule = ?, is_verified = ?, updated_at = NOW() WHERE id = ?");
+            $stmt->execute([$name, $gender, $description, $whatsapp, $city, $location, $schedule, $isVerified ? 1 : 0, $profileId]);
 
-            echo json_encode([
-                'success' => true,
-                'message' => 'Perfil actualizado correctamente',
-                'redirect' => url('/admin/perfil/' . $profileId)
-            ]);
+            if ($stmt->rowCount() >= 0) { // Podría ser 0 si no hay cambios
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Perfil actualizado correctamente',
+                    'redirect' => url('/admin/perfil/' . $profileId)
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Error al actualizar perfil: No se pudo actualizar en la base de datos']);
+            }
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Error al actualizar perfil: ' . $e->getMessage()]);
@@ -616,14 +728,24 @@ class AdminController
         // Verificar método
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo json_encode(['error' => 'Método no permitido']);
+            if (isAjax()) {
+                echo json_encode(['error' => 'Método no permitido']);
+                exit;
+            }
+            setFlashMessage('danger', 'Método no permitido');
+            redirect('/admin/perfiles');
             exit;
         }
 
         // Verificar token CSRF
         if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
             http_response_code(403);
-            echo json_encode(['error' => 'Token CSRF inválido']);
+            if (isAjax()) {
+                echo json_encode(['error' => 'Token CSRF inválido']);
+                exit;
+            }
+            setFlashMessage('danger', 'Token CSRF inválido');
+            redirect('/admin/perfiles');
             exit;
         }
 
@@ -635,24 +757,40 @@ class AdminController
 
         if (!$profile) {
             http_response_code(404);
-            echo json_encode(['error' => 'Perfil no encontrado']);
+            if (isAjax()) {
+                echo json_encode(['error' => 'Perfil no encontrado']);
+                exit;
+            }
+            setFlashMessage('danger', 'Perfil no encontrado');
+            redirect('/admin/perfiles');
             exit;
         }
 
         try {
-            // Actualizar perfil
-            Profile::update($profileId, ['is_verified' => true]);
+            // Actualizar perfil en la base de datos directamente
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("UPDATE profiles SET is_verified = 1, updated_at = NOW() WHERE id = ?");
+            $stmt->execute([$profileId]);
 
-            // Determinar tipo de respuesta (AJAX o normal)
-            if (isAjax()) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Perfil verificado correctamente',
-                    'redirect' => url('/admin/perfil/' . $profileId)
-                ]);
+            if ($stmt->rowCount() > 0) {
+                if (isAjax()) {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Perfil verificado correctamente',
+                        'redirect' => url('/admin/perfil/' . $profileId)
+                    ]);
+                } else {
+                    setFlashMessage('success', 'Perfil verificado correctamente');
+                    redirect('/admin/perfil/' . $profileId);
+                }
             } else {
-                setFlashMessage('success', 'Perfil verificado correctamente');
-                redirect('/admin/perfil/' . $profileId);
+                if (isAjax()) {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'No se pudo verificar el perfil']);
+                } else {
+                    setFlashMessage('danger', 'No se pudo verificar el perfil');
+                    redirect('/admin/perfil/' . $profileId);
+                }
             }
         } catch (Exception $e) {
             error_log('Error al verificar perfil: ' . $e->getMessage());
@@ -665,7 +803,6 @@ class AdminController
                 redirect('/admin/perfil/' . $profileId);
             }
         }
-
         exit;
     }
 
@@ -1232,96 +1369,6 @@ class AdminController
     }
 
     /**
-     * Cambiar estado de usuario (activo/suspendido)
-     */
-    public function toggleUserStatus()
-    {
-        // Para propósitos de depuración
-        error_log('toggleUserStatus called');
-        error_log('POST data: ' . print_r($_POST, true));
-
-        // Verificar método
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            error_log("Método incorrecto: " . $_SERVER['REQUEST_METHOD']);
-            setFlashMessage('danger', 'Método no permitido');
-            redirect('/admin/usuarios');
-            exit;
-        }
-
-        // Verificar token CSRF
-        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
-            error_log("Token CSRF inválido");
-            setFlashMessage('danger', 'Token CSRF inválido');
-            redirect('/admin/usuarios');
-            exit;
-        }
-
-        // Obtener datos
-        $userId = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
-        $status = isset($_POST['status']) ? $_POST['status'] : '';
-
-        // Registrar para debug
-        error_log("toggleUserStatus - userId: $userId, status: $status");
-
-        // Validar datos
-        if ($userId <= 0) {
-            error_log("ID de usuario inválido: $userId");
-            setFlashMessage('danger', 'ID de usuario inválido');
-            redirect('/admin/usuarios');
-            exit;
-        }
-
-        if (!in_array($status, ['active', 'suspended'])) {
-            error_log("Estado inválido: $status");
-            setFlashMessage('danger', 'Estado inválido');
-            redirect('/admin/usuarios');
-            exit;
-        }
-
-        try {
-            // Verificar que el usuario exista
-            $user = User::getById($userId);
-
-            error_log("Resultado de User::getById: " . ($user ? json_encode($user) : 'false'));
-
-            if (!$user) {
-                error_log("Usuario no encontrado con ID: $userId");
-                setFlashMessage('danger', 'Usuario no encontrado');
-                redirect('/admin/usuarios');
-                exit;
-            }
-
-            // No permitir cambiar el estado de un administrador
-            if ($user['user_type'] === 'admin') {
-                error_log("Intento de cambiar estado de un administrador");
-                setFlashMessage('danger', 'No se puede cambiar el estado de un administrador');
-                redirect('/admin/usuarios');
-                exit;
-            }
-
-            // Actualizar estado
-            error_log("Intentando actualizar usuario $userId a estado $status");
-            $result = User::update($userId, ['status' => $status]);
-            error_log("Resultado de actualización: " . ($result ? 'true' : 'false'));
-
-            if ($result) {
-                $message = $status === 'active' ? 'Usuario activado correctamente' : 'Usuario suspendido correctamente';
-                setFlashMessage('success', $message);
-            } else {
-                error_log("Error al actualizar usuario: No se actualizó ningún registro");
-                setFlashMessage('danger', 'No se pudo actualizar el estado del usuario');
-            }
-        } catch (Exception $e) {
-            error_log('Error en toggleUserStatus: ' . $e->getMessage());
-            setFlashMessage('danger', 'Error al cambiar el estado del usuario: ' . $e->getMessage());
-        }
-
-        // Redirigir de vuelta a la lista de usuarios
-        redirect('/admin/usuarios');
-        exit;
-    }
-
-    /**
      * Actualiza el estado de un pago
      */
     public function updatePaymentStatus()
@@ -1463,13 +1510,21 @@ class AdminController
             exit;
         }
 
-        // Actualizar estado
+        // Actualizar estado directamente
         try {
-            Subscription::update($subscriptionId, ['status' => $status]);
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("UPDATE subscriptions SET status = ?, updated_at = NOW() WHERE id = ?");
+            $stmt->execute([$status, $subscriptionId]);
 
-            setFlashMessage('success', 'Estado de suscripción actualizado correctamente');
+            if ($stmt->rowCount() > 0) {
+                setFlashMessage('success', 'Estado de suscripción actualizado correctamente');
+            } else {
+                setFlashMessage('danger', 'No se pudo actualizar el estado de la suscripción');
+            }
+
             redirect('/admin/suscripcion/' . $subscriptionId);
         } catch (Exception $e) {
+            error_log('Error al cambiar estado de suscripción: ' . $e->getMessage());
             setFlashMessage('danger', 'Error al actualizar estado: ' . $e->getMessage());
             redirect('/admin/suscripcion/' . $subscriptionId);
         }
@@ -1619,26 +1674,35 @@ class AdminController
         $userId = $_POST['user_id'] ?? 0;
 
         // Verificar que el usuario exista
-        $user = User::getById($userId);
-
-        if (!$user) {
-            setFlashMessage('danger', 'Usuario no encontrado');
-            redirect('/admin/usuarios');
-            exit;
-        }
-
-        // No permitir eliminar administradores
-        if ($user['user_type'] === 'admin') {
-            setFlashMessage('danger', 'No se pueden eliminar administradores');
-            redirect('/admin/usuarios');
-            exit;
-        }
-
         try {
-            // Marcar usuario como eliminado (soft delete)
-            User::update($userId, ['status' => 'deleted']);
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            setFlashMessage('success', 'Usuario eliminado correctamente');
+            if (!$user) {
+                setFlashMessage('danger', 'Usuario no encontrado');
+                redirect('/admin/usuarios');
+                exit;
+            }
+
+            // No permitir eliminar administradores
+            if ($user['user_type'] === 'admin') {
+                setFlashMessage('danger', 'No se pueden eliminar administradores');
+                redirect('/admin/usuarios');
+                exit;
+            }
+
+            // Marcar usuario como eliminado (soft delete)
+            $stmt = $conn->prepare("UPDATE users SET status = 'deleted' WHERE id = ?");
+            $result = $stmt->execute([$userId]);
+
+            if ($result) {
+                setFlashMessage('success', 'Usuario eliminado correctamente');
+            } else {
+                setFlashMessage('danger', 'No se pudo eliminar el usuario');
+            }
+
             redirect('/admin/usuarios');
         } catch (Exception $e) {
             setFlashMessage('danger', 'Error al eliminar usuario: ' . $e->getMessage());

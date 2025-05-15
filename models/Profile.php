@@ -60,28 +60,26 @@ class Profile
     {
         $conn = getDbConnection();
 
-        $setClause = '';
-        $params = [];
+        // Construir consulta SQL
+        $setParts = [];
+        $values = [];
 
         foreach ($data as $key => $value) {
-            if (!empty($setClause)) {
-                $setClause .= ', ';
-            }
-            $setClause .= "$key = :$key";
-            $params[":$key"] = $value;
+            $setParts[] = "$key = ?";
+            $values[] = $value;
         }
 
-        $params[':id'] = $id;
+        $setParts[] = "updated_at = NOW()";
+        $values[] = $id; // Para la condición WHERE
 
-        $sql = "UPDATE profiles SET $setClause WHERE id = :id";
+        $query = "UPDATE profiles SET " . implode(', ', $setParts) . " WHERE id = ?";
 
         try {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute($params);
-            return $stmt->rowCount() > 0;
+            $stmt = $conn->prepare($query);
+            return $stmt->execute($values);
         } catch (PDOException $e) {
             error_log('Error al actualizar perfil: ' . $e->getMessage());
-            throw new Exception('Error al actualizar perfil: ' . $e->getMessage());
+            return false;
         }
     }
 

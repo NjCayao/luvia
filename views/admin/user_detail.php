@@ -61,13 +61,16 @@
                                     <i class="fas fa-edit"></i> Editar
                                 </a>
                                 <?php if ($user['user_type'] !== 'admin'): ?>
-                                    <button type="button" class="btn btn-<?= $user['status'] === 'active' ? 'warning' : 'success' ?> toggle-status-btn"
-                                        data-id="<?= $user['id'] ?>"
-                                        data-status="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>"
-                                        data-current="<?= $user['status'] ?>">
-                                        <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
-                                        <?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?>
-                                    </button>
+                                    <form action="<?= url('/admin/usuario/cambiar-estado') ?>" method="POST" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+                                        <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                        <input type="hidden" name="status" value="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>">
+                                        <input type="hidden" name="redirect_url" value="<?= url('/admin/usuario/' . $user['id']) ?>">
+                                        <button type="submit" class="btn <?= $user['status'] === 'active' ? 'btn-warning' : 'btn-success' ?>">
+                                            <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
+                                            <?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?>
+                                        </button>
+                                    </form>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -251,19 +254,43 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Manejar botones de cambio de estado
-    document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const userId = this.getAttribute('data-id');
-            const newStatus = this.getAttribute('data-status');
-            
-            document.getElementById('userId').value = userId;
-            document.getElementById('userStatus').value = newStatus;
-            
-            const form = document.getElementById('statusForm');
-            form.submit();
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejar botones de cambio de estado
+        document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const userId = this.getAttribute('data-id');
+                const newStatus = this.getAttribute('data-status');
+                const currentStatus = this.getAttribute('data-current');
+
+                if (confirm('¿Estás seguro que deseas cambiar el estado de este usuario?')) {
+                    // Crear y enviar un formulario
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '<?= url('/admin/usuario/cambiar-estado') ?>';
+
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrf_token';
+                    csrfInput.value = '<?= getCsrfToken() ?>';
+                    form.appendChild(csrfInput);
+
+                    const userIdInput = document.createElement('input');
+                    userIdInput.type = 'hidden';
+                    userIdInput.name = 'user_id';
+                    userIdInput.value = userId;
+                    form.appendChild(userIdInput);
+
+                    const statusInput = document.createElement('input');
+                    statusInput.type = 'hidden';
+                    statusInput.name = 'status';
+                    statusInput.value = newStatus;
+                    form.appendChild(statusInput);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
         });
     });
-});
 </script>

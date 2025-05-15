@@ -89,24 +89,26 @@ function getFlashMessage() {
  * Muestra un mensaje flash si existe
  */
 function displayFlashMessage() {
-    $flashMessage = getFlashMessage();
-    if ($flashMessage) {
-        $type = $flashMessage['type'];
-        $message = $flashMessage['message'];
+    if (isset($_SESSION['flash_message'])) {
+        $message = $_SESSION['flash_message'];
+        unset($_SESSION['flash_message']);
         
-        echo '<div class="alert alert-' . $type . ' alert-dismissible fade show" role="alert">';
-        echo $message;
-        echo '<button type="button" class="close" data-dismiss="alert" aria-label="Close">';
-        echo '<span aria-hidden="true">&times;</span>';
-        echo '</button>';
-        echo '</div>';
+        $type = $message['type'];
+        $text = $message['message'];
+        
+        echo "<div class='alert alert-{$type} alert-dismissible fade show'>
+                {$text}
+                <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
+                    <span aria-hidden='true'>&times;</span>
+                </button>
+              </div>";
     }
 }
 
 /**
  * Genera un token CSRF para proteger formularios
  */
-function generateCsrfToken() {
+function getCsrfToken() {
     if (!isset($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
@@ -117,10 +119,14 @@ function generateCsrfToken() {
  * Verifica un token CSRF
  */
 function verifyCsrfToken($token) {
-    if (!isset($_SESSION['csrf_token']) || $token !== $_SESSION['csrf_token']) {
-        return false;
-    }
-    return true;
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+/**
+ * Alias para getCsrfToken() - mantiene compatibilidad con código existente
+ */
+function generateCsrfToken() {
+    return getCsrfToken();
 }
 
 /**
@@ -266,8 +272,8 @@ function getMobileDevice() {
  * Verifica si es una petición AJAX
  */
 function isAjax() {
-    return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-        strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+    return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
 }
 
 /**

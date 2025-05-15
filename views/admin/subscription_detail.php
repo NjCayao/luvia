@@ -223,12 +223,10 @@
             </div>
             <div class="modal-body">
                 <p id="subscriptionStatusMessage">¿Estás seguro que deseas cambiar el estado de esta suscripción?</p>
-                <form id="cancelSubscriptionForm" method="POST" action="<?= url('/admin/suscripcion/cancelar') ?>">
+                <form id="subscriptionStatusForm" method="POST" action="<?= url('/admin/suscripcion/cambiar-estado') ?>" style="display: none;">
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-                    <input type="hidden" name="subscription_id" value="<?= $subscription['id'] ?>">
-                    <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-ban"></i> Cancelar Renovación Automática
-                    </button>
+                    <input type="hidden" name="subscription_id" id="subscriptionId" value="<?= $subscription['id'] ?>">
+                    <input type="hidden" name="status" id="subscriptionStatus" value="">
                 </form>
             </div>
             <div class="modal-footer">
