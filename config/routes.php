@@ -46,7 +46,7 @@ $routes = [
         'action' => 'processContact',
         'method' => 'POST'
     ],
-    
+
     // Autenticación
     '/registro' => [
         'controller' => 'AuthController',
@@ -112,7 +112,7 @@ $routes = [
         'action' => 'logout',
         'auth' => true
     ],
-    
+
     // Rutas de usuario (requieren autenticación)
     '/usuario/dashboard' => [
         'controller' => 'ProfileController',
@@ -181,7 +181,7 @@ $routes = [
         'auth' => true,
         'method' => 'POST'
     ],
-    
+
     // Rutas de pago
     '/pago/planes' => [
         'controller' => 'SubscriptionController',
@@ -219,14 +219,14 @@ $routes = [
         'action' => 'failed',
         'auth' => true
     ],
-    
+
     // Webhook de Izipay (sin autenticación)
     '/api/pago/ipn' => [
         'controller' => 'PaymentController',
         'action' => 'ipnHandler',
         'method' => 'POST'
     ],
-    
+
     // Suscripciones
     '/usuario/suscripciones' => [
         'controller' => 'SubscriptionController',
@@ -250,7 +250,7 @@ $routes = [
         'action' => 'renew',
         'auth' => true
     ],
-    
+
     // Rutas de administración
     '/admin' => [
         'controller' => 'AdminController',
@@ -305,5 +305,34 @@ $routes = [
         'action' => 'viewProfile',
         'auth' => true,
         'admin' => true
+    ],
+
+    // Agregar estas rutas para la administración de usuarios
+    '/admin/usuario/{id}/editar' => [
+        'controller' => 'AdminController',
+        'action' => 'editUser',
+        'auth' => true,
+        'admin' => true
+    ],
+    '/admin/usuario/actualizar' => [
+        'controller' => 'AdminController',
+        'action' => 'updateUser',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ],
+    '/admin/usuario/cambiar-estado' => [
+        'controller' => 'AdminController',
+        'action' => 'toggleUserStatus',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ],
+    '/admin/usuario/eliminar' => [
+        'controller' => 'AdminController',
+        'action' => 'deleteUser',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
     ],
 ];

@@ -207,7 +207,7 @@ class AdminController
         $pageHeader = 'Usuario: ' . ($user['email'] ?? $user['phone']);
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/view_user.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -233,7 +233,7 @@ class AdminController
         $pageHeader = 'Editar Usuario';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/user_edit.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -436,7 +436,7 @@ class AdminController
         $pageHeader = 'Perfil: ' . $profile['name'];
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/user_detail.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -468,7 +468,7 @@ class AdminController
         $pageHeader = 'Editar Perfil';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/edit_profile.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -726,7 +726,7 @@ class AdminController
         $pageHeader = 'Pago #' . $payment['id'];
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/payment_detail.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -816,7 +816,7 @@ class AdminController
         $pageHeader = 'Suscripción #' . $subscription['id'];
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/subscription_detail.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -869,7 +869,7 @@ class AdminController
         $pageHeader = 'Editar Plan';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/plan_edit.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -884,7 +884,7 @@ class AdminController
         $pageHeader = 'Crear Plan';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/dashboard.php';
+        $viewFile = __DIR__ . '/../views/admin/create_plan';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
