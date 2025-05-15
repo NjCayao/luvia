@@ -104,13 +104,15 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <?php if ($user['user_type'] !== 'admin'): ?>
-                                        <button type="button" class="btn btn-sm btn-danger toggle-status-btn" 
-                                                data-id="<?= $user['id'] ?>" 
-                                                data-status="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>"
-                                                data-current="<?= $user['status'] ?>"
+                                        <form action="<?= url('admin/usuario/cambiar-estado') ?>" method="POST" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                                            <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                            <input type="hidden" name="status" value="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>">
+                                            <button type="submit" class="btn btn-sm <?= $user['status'] === 'active' ? 'btn-danger' : 'btn-success' ?>"
                                                 title="<?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?>">
-                                            <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
-                                        </button>
+                                                <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
+                                            </button>
+                                        </form>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -121,40 +123,40 @@
         </table>
     </div>
     <!-- /.card-body -->
-    
+
     <?php if ($totalPages > 1): ?>
-    <div class="card-footer clearfix">
-        <ul class="pagination pagination-sm m-0 float-right">
-            <?php if ($page > 1): ?>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => 1]))) ?>">«</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => $page - 1]))) ?>">‹</a>
-                </li>
-            <?php endif; ?>
-            
-            <?php
-            $startPage = max(1, $page - 2);
-            $endPage = min($totalPages, $page + 2);
-            
-            for ($i = $startPage; $i <= $endPage; $i++):
-            ?>
-                <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                    <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => $i]))) ?>"><?= $i ?></a>
-                </li>
-            <?php endfor; ?>
-            
-            <?php if ($page < $totalPages): ?>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => $page + 1]))) ?>">›</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => $totalPages]))) ?>">»</a>
-                </li>
-            <?php endif; ?>
-        </ul>
-    </div>
+        <div class="card-footer clearfix">
+            <ul class="pagination pagination-sm m-0 float-right">
+                <?php if ($page > 1): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => 1]))) ?>">«</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => $page - 1]))) ?>">‹</a>
+                    </li>
+                <?php endif; ?>
+
+                <?php
+                $startPage = max(1, $page - 2);
+                $endPage = min($totalPages, $page + 2);
+
+                for ($i = $startPage; $i <= $endPage; $i++):
+                ?>
+                    <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                        <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => $i]))) ?>"><?= $i ?></a>
+                    </li>
+                <?php endfor; ?>
+
+                <?php if ($page < $totalPages): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => $page + 1]))) ?>">›</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/usuarios?' . http_build_query(array_merge($_GET, ['page' => $totalPages]))) ?>">»</a>
+                    </li>
+                <?php endif; ?>
+            </ul>
+        </div>
     <?php endif; ?>
 </div>
 <!-- /.card -->
@@ -172,7 +174,7 @@
             <div class="modal-body">
                 <p id="statusMessage">¿Estás seguro que deseas cambiar el estado de este usuario?</p>
                 <form id="statusForm" method="POST" action="<?= url('/admin/usuario/cambiar-estado') ?>">
-                    <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="user_id" id="userId" value="">
                     <input type="hidden" name="status" id="userStatus" value="">
                 </form>
@@ -186,33 +188,38 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Manejar botones de cambio de estado
-    document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const userId = this.getAttribute('data-id');
-            const newStatus = this.getAttribute('data-status');
-            const currentStatus = this.getAttribute('data-current');
-            
-            document.getElementById('userId').value = userId;
-            document.getElementById('userStatus').value = newStatus;
-            
-            let message = '';
-            if (newStatus === 'active') {
-                message = '¿Estás seguro que deseas activar este usuario?';
-            } else if (newStatus === 'suspended') {
-                message = '¿Estás seguro que deseas suspender este usuario? Esto bloqueará su acceso a la plataforma.';
-            }
-            
-            document.getElementById('statusMessage').textContent = message;
-            
-            $('#statusModal').modal('show');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejar botones de cambio de estado
+        document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const userId = this.getAttribute('data-id');
+                const newStatus = this.getAttribute('data-status');
+                const currentStatus = this.getAttribute('data-current');
+
+                document.getElementById('userId').value = userId;
+                document.getElementById('userStatus').value = newStatus;
+
+                let message = '';
+                if (newStatus === 'active') {
+                    message = '¿Estás seguro que deseas activar este usuario?';
+                } else if (newStatus === 'suspended') {
+                    message = '¿Estás seguro que deseas suspender este usuario? Esto bloqueará su acceso a la plataforma.';
+                }
+
+                document.getElementById('statusMessage').textContent = message;
+
+                $('#statusModal').modal('show');
+            });
+        });
+
+        // Confirmar cambio de estado
+        document.getElementById('confirmStatusChange').addEventListener('click', function() {
+            // Para debugging
+            console.log('Enviando formulario con datos:');
+            console.log('user_id:', document.getElementById('userId').value);
+            console.log('status:', document.getElementById('userStatus').value);
+
+            document.getElementById('statusForm').submit();
         });
     });
-    
-    // Confirmar cambio de estado
-    document.getElementById('confirmStatusChange').addEventListener('click', function() {
-        document.getElementById('statusForm').submit();
-    });
-});
 </script>

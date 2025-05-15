@@ -15,7 +15,7 @@
             <div class="col-md-4">
                 <!-- Foto principal -->
                 <div class="text-center mb-3">
-                    <?php 
+                    <?php
                     $mainPhoto = null;
                     foreach ($profile['media'] ?? [] as $media) {
                         if ($media['media_type'] === 'photo' && $media['is_primary']) {
@@ -24,14 +24,14 @@
                         }
                     }
                     ?>
-                    
+
                     <?php if ($mainPhoto): ?>
                         <img src="<?= url('uploads/photos/' . $mainPhoto['filename']) ?>" alt="Foto principal" class="img-fluid rounded" style="max-height: 300px;">
                     <?php else: ?>
                         <img src="<?= url('img/profile-placeholder.jpg') ?>" alt="Sin foto" class="img-fluid rounded" style="max-height: 300px;">
                     <?php endif; ?>
                 </div>
-                
+
                 <!-- Estado de verificación -->
                 <div class="text-center mb-3">
                     <?php if ($profile['is_verified']): ?>
@@ -40,7 +40,7 @@
                         <span class="badge badge-warning">Perfil No Verificado</span>
                     <?php endif; ?>
                 </div>
-                
+
                 <!-- Estadísticas -->
                 <div class="info-box">
                     <span class="info-box-icon bg-info"><i class="fas fa-eye"></i></span>
@@ -49,7 +49,7 @@
                         <span class="info-box-number"><?= $profile['views'] ?? 0 ?></span>
                     </div>
                 </div>
-                
+
                 <div class="info-box">
                     <span class="info-box-icon bg-success"><i class="fab fa-whatsapp"></i></span>
                     <div class="info-box-content">
@@ -57,29 +57,29 @@
                         <span class="info-box-number"><?= $profile['whatsapp_clicks'] ?? 0 ?></span>
                     </div>
                 </div>
-                
+
                 <!-- Botones de acción -->
                 <div class="mt-3">
                     <a href="<?= url('/admin/perfil/' . $profile['id'] . '/editar') ?>" class="btn btn-primary btn-block">
                         <i class="fas fa-edit"></i> Editar Perfil
                     </a>
-                    
+
                     <?php if (!$profile['is_verified']): ?>
-                        <form action="<?= url('/admin/perfil/verificar') ?>" method="POST" class="mt-2">
-                            <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+                        <form id="verifyForm" method="POST" action="<?= url('/admin/perfil/verificar') ?>">
+                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                             <input type="hidden" name="profile_id" value="<?= $profile['id'] ?>">
                             <button type="submit" class="btn btn-success btn-block">
                                 <i class="fas fa-check-circle"></i> Verificar Perfil
                             </button>
                         </form>
                     <?php endif; ?>
-                    
+
                     <a href="<?= url('/perfil/' . $profile['id']) ?>" target="_blank" class="btn btn-info btn-block mt-2">
                         <i class="fas fa-external-link-alt"></i> Ver en Sitio
                     </a>
                 </div>
             </div>
-            
+
             <div class="col-md-8">
                 <!-- Datos del perfil -->
                 <div class="card">
@@ -131,7 +131,7 @@
                         </table>
                     </div>
                 </div>
-                
+
                 <!-- Descripción -->
                 <div class="card">
                     <div class="card-header">
@@ -141,7 +141,7 @@
                         <?= nl2br(htmlspecialchars($profile['description'])) ?>
                     </div>
                 </div>
-                
+
                 <!-- Tarifas -->
                 <div class="card">
                     <div class="card-header">
@@ -165,8 +165,7 @@
                                     <?php foreach ($profile['rates'] as $rate): ?>
                                         <tr>
                                             <td>
-                                                <?= $rate['rate_type'] === 'hour' ? 'Hora' : 
-                                                   ($rate['rate_type'] === 'half_hour' ? 'Media Hora' : 'Extra') ?>
+                                                <?= $rate['rate_type'] === 'hour' ? 'Hora' : ($rate['rate_type'] === 'half_hour' ? 'Media Hora' : 'Extra') ?>
                                             </td>
                                             <td><?= htmlspecialchars($rate['description']) ?></td>
                                             <td>S/. <?= number_format($rate['price'], 2) ?></td>
@@ -177,7 +176,7 @@
                         </table>
                     </div>
                 </div>
-                
+
                 <!-- Galería de fotos -->
                 <div class="card">
                     <div class="card-header">
@@ -185,7 +184,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <?php 
+                            <?php
                             $photos = [];
                             foreach ($profile['media'] ?? [] as $media) {
                                 if ($media['media_type'] === 'photo') {
@@ -193,7 +192,7 @@
                                 }
                             }
                             ?>
-                            
+
                             <?php if (empty($photos)): ?>
                                 <div class="col-12 text-center">
                                     <p>No hay fotos disponibles</p>
@@ -213,7 +212,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Galería de videos -->
                 <div class="card">
                     <div class="card-header">
@@ -221,7 +220,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <?php 
+                            <?php
                             $videos = [];
                             foreach ($profile['media'] ?? [] as $media) {
                                 if ($media['media_type'] === 'video') {
@@ -229,7 +228,7 @@
                                 }
                             }
                             ?>
-                            
+
                             <?php if (empty($videos)): ?>
                                 <div class="col-12 text-center">
                                     <p>No hay videos disponibles</p>
@@ -253,16 +252,18 @@
 </div>
 
 <style>
-.badge-pink {
-    background-color: #f27eb5;
-    color: white;
-}
-.badge-blue {
-    background-color: #3490dc;
-    color: white;
-}
-.badge-purple {
-    background-color: #8e44ad;
-    color: white;
-}
+    .badge-pink {
+        background-color: #f27eb5;
+        color: white;
+    }
+
+    .badge-blue {
+        background-color: #3490dc;
+        color: white;
+    }
+
+    .badge-purple {
+        background-color: #8e44ad;
+        color: white;
+    }
 </style>

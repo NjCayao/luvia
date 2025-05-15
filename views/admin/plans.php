@@ -27,12 +27,12 @@
                 </tr>
             </thead>
             <tbody>
-                <?php 
-                $advertiserPlans = array_filter($plans, function($plan) {
+                <?php
+                $advertiserPlans = array_filter($plans, function ($plan) {
                     return $plan['user_type'] === 'advertiser';
                 });
-                
-                if (empty($advertiserPlans)): 
+
+                if (empty($advertiserPlans)):
                 ?>
                     <tr>
                         <td colspan="8" class="text-center py-3">No hay planes para anunciantes</td>
@@ -58,10 +58,10 @@
                                     <a href="<?= url('/admin/plan/' . $plan['id'] . '/editar') ?>" class="btn btn-sm btn-primary" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <button type="button" class="btn btn-sm btn-danger delete-plan-btn" 
-                                            data-id="<?= $plan['id'] ?>" 
-                                            data-name="<?= htmlspecialchars($plan['name']) ?>"
-                                            title="Eliminar">
+                                    <button type="button" class="btn btn-sm btn-danger delete-plan-btn"
+                                        data-id="<?= $plan['id'] ?>"
+                                        data-name="<?= htmlspecialchars($plan['name']) ?>"
+                                        title="Eliminar">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -98,12 +98,12 @@
                 </tr>
             </thead>
             <tbody>
-                <?php 
-                $visitorPlans = array_filter($plans, function($plan) {
+                <?php
+                $visitorPlans = array_filter($plans, function ($plan) {
                     return $plan['user_type'] === 'visitor';
                 });
-                
-                if (empty($visitorPlans)): 
+
+                if (empty($visitorPlans)):
                 ?>
                     <tr>
                         <td colspan="6" class="text-center py-3">No hay planes para visitantes</td>
@@ -127,10 +127,10 @@
                                     <a href="<?= url('/admin/plan/' . $plan['id'] . '/editar') ?>" class="btn btn-sm btn-primary" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <button type="button" class="btn btn-sm btn-danger delete-plan-btn" 
-                                            data-id="<?= $plan['id'] ?>" 
-                                            data-name="<?= htmlspecialchars($plan['name']) ?>"
-                                            title="Eliminar">
+                                    <button type="button" class="btn btn-sm btn-danger delete-plan-btn"
+                                        data-id="<?= $plan['id'] ?>"
+                                        data-name="<?= htmlspecialchars($plan['name']) ?>"
+                                        title="Eliminar">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -159,7 +159,7 @@
                 <p>¿Estás seguro que deseas eliminar el plan "<span id="planName"></span>"?</p>
                 <p class="text-danger">Esta acción no se puede deshacer. Solo se puede eliminar un plan si no hay usuarios que lo estén utilizando.</p>
                 <form id="deletePlanForm" method="POST" action="<?= url('/admin/plan/eliminar') ?>">
-                    <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="plan_id" id="planId" value="">
                 </form>
             </div>
@@ -179,16 +179,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const planId = this.getAttribute('data-id');
             const planName = this.getAttribute('data-name');
             
-            document.getElementById('planId').value = planId;
-            document.getElementById('planName').textContent = planName;
-            
-            $('#deletePlanModal').modal('show');
+            if (confirm('¿Estás seguro que deseas eliminar el plan "' + planName + '"?')) {
+                document.getElementById('planId').value = planId;
+                document.getElementById('deletePlanForm').submit();
+            }
         });
-    });
-    
-    // Confirmar eliminación de plan
-    document.getElementById('confirmDeletePlan').addEventListener('click', function() {
-        document.getElementById('deletePlanForm').submit();
     });
 });
 </script>

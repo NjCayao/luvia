@@ -18,7 +18,7 @@
             </div>
         <?php else: ?>
             <form id="profile-form" method="POST" action="<?= url('/admin/perfil/actualizar') ?>">
-                <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                 <input type="hidden" name="profile_id" value="<?= $profile['id'] ?? 0 ?>">
                 
                 <div class="row">

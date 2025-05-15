@@ -60,20 +60,29 @@ class Profile
     {
         $conn = getDbConnection();
 
-        $setFields = [];
+        $setClause = '';
         $params = [];
 
-        foreach ($data as $field => $value) {
-            $setFields[] = "$field = ?";
-            $params[] = $value;
+        foreach ($data as $key => $value) {
+            if (!empty($setClause)) {
+                $setClause .= ', ';
+            }
+            $setClause .= "$key = :$key";
+            $params[":$key"] = $value;
         }
 
-        $params[] = $id;
+        $params[':id'] = $id;
 
-        $sql = "UPDATE profiles SET " . implode(', ', $setFields) . " WHERE id = ?";
-        $stmt = $conn->prepare($sql);
+        $sql = "UPDATE profiles SET $setClause WHERE id = :id";
 
-        return $stmt->execute($params);
+        try {
+            $stmt = $conn->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('Error al actualizar perfil: ' . $e->getMessage());
+            throw new Exception('Error al actualizar perfil: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -586,13 +595,13 @@ class Profile
     }
 
     /**
- * Obtiene todos los perfiles con filtros opcionales
- */
-public static function getAll($limit = 100, $offset = 0, $filters = [])
-{
-    $conn = getDbConnection();
-    
-    $sql = "SELECT p.*, u.id as user_id, u.status as user_status, 
+     * Obtiene todos los perfiles con filtros opcionales
+     */
+    public static function getAll($limit = 100, $offset = 0, $filters = [])
+    {
+        $conn = getDbConnection();
+
+        $sql = "SELECT p.*, u.id as user_id, u.status as user_status, 
             m.filename as main_photo 
             FROM profiles p
             JOIN users u ON p.user_id = u.id
@@ -602,47 +611,47 @@ public static function getAll($limit = 100, $offset = 0, $filters = [])
                 WHERE media_type = 'photo' AND is_primary = TRUE
                 LIMIT 1
             ) m ON m.profile_id = p.id";
-    
-    $params = [];
-    $whereConditions = [];
-    
-    // Aplicar filtros
-    if (!empty($filters)) {
-        if (isset($filters['gender']) && !empty($filters['gender'])) {
-            $whereConditions[] = "p.gender = ?";
-            $params[] = $filters['gender'];
+
+        $params = [];
+        $whereConditions = [];
+
+        // Aplicar filtros
+        if (!empty($filters)) {
+            if (isset($filters['gender']) && !empty($filters['gender'])) {
+                $whereConditions[] = "p.gender = ?";
+                $params[] = $filters['gender'];
+            }
+
+            if (isset($filters['city']) && !empty($filters['city'])) {
+                $whereConditions[] = "p.city = ?";
+                $params[] = $filters['city'];
+            }
+
+            if (isset($filters['is_verified'])) {
+                $whereConditions[] = "p.is_verified = ?";
+                $params[] = $filters['is_verified'] ? 1 : 0;
+            }
+
+            if (isset($filters['search']) && !empty($filters['search'])) {
+                $whereConditions[] = "(p.name LIKE ? OR p.description LIKE ?)";
+                $params[] = "%{$filters['search']}%";
+                $params[] = "%{$filters['search']}%";
+            }
         }
-        
-        if (isset($filters['city']) && !empty($filters['city'])) {
-            $whereConditions[] = "p.city = ?";
-            $params[] = $filters['city'];
+
+        // Construir condición WHERE
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(' AND ', $whereConditions);
         }
-        
-        if (isset($filters['is_verified'])) {
-            $whereConditions[] = "p.is_verified = ?";
-            $params[] = $filters['is_verified'] ? 1 : 0;
-        }
-        
-        if (isset($filters['search']) && !empty($filters['search'])) {
-            $whereConditions[] = "(p.name LIKE ? OR p.description LIKE ?)";
-            $params[] = "%{$filters['search']}%";
-            $params[] = "%{$filters['search']}%";
-        }
+
+        // Añadir orden y límites
+        $sql .= " ORDER BY p.id DESC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
     }
-    
-    // Construir condición WHERE
-    if (!empty($whereConditions)) {
-        $sql .= " WHERE " . implode(' AND ', $whereConditions);
-    }
-    
-    // Añadir orden y límites
-    $sql .= " ORDER BY p.id DESC LIMIT ? OFFSET ?";
-    $params[] = $limit;
-    $params[] = $offset;
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->execute($params);
-    
-    return $stmt->fetchAll();
-}
 }

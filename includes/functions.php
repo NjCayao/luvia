@@ -5,6 +5,14 @@
  * Redirecciona a una URL específica
  */
 function redirect($url, $statusCode = 302) {
+    // Si la URL comienza con /, construir URL completa usando la base
+    if (strpos($url, '/') === 0) {
+        $url = url(ltrim($url, '/')); 
+    } elseif (strpos($url, 'http') !== 0) {
+        // Si no es una URL absoluta, construirla
+        $url = url($url);
+    }
+    
     header('Location: ' . $url, true, $statusCode);
     exit;
 }
@@ -13,7 +21,32 @@ function redirect($url, $statusCode = 302) {
  * Genera una URL completa basada en la URL base configurada
  */
 function url($path = '') {
-    return APP_URL . '/' . ltrim($path, '/');
+    // Si APP_URL está definido, usarlo como base
+    if (defined('APP_URL')) {
+        $baseUrl = APP_URL;
+    } else {
+        // Detectar automáticamente la base de la URL
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+        $domainName = $_SERVER['HTTP_HOST'];
+        
+        // Obtener el directorio base
+        $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+        // Eliminar "/public" si está presente al final
+        if (substr($scriptDir, -7) === '/public') {
+            $baseDir = $scriptDir;
+        } else {
+            $baseDir = $scriptDir;
+        }
+        
+        // Asegurar que la base termine con una barra diagonal
+        $baseUrl = $protocol . $domainName . rtrim($baseDir, '/');
+    }
+    
+    // Asegurar que $path no comience con barra diagonal para evitar duplicados
+    $path = ltrim($path, '/');
+    
+    // Combinar base URL y path
+    return rtrim($baseUrl, '/') . '/' . $path;
 }
 
 /**
@@ -94,8 +127,18 @@ function verifyCsrfToken($token) {
  * Formatea una fecha para mostrarla
  */
 function formatDate($date, $format = 'd/m/Y H:i') {
-    $dateTime = new DateTime($date);
-    return $dateTime->format($format);
+    // Verificar si la fecha es null o vacía
+    if ($date === null || empty($date)) {
+        return '-'; // o cualquier texto que prefieras para fechas no disponibles
+    }
+    
+    try {
+        $dateTime = new DateTime($date);
+        return $dateTime->format($format);
+    } catch (Exception $e) {
+        error_log("Error al formatear fecha: " . $e->getMessage());
+        return 'Fecha inválida';
+    }
 }
 
 /**

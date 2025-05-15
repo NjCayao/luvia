@@ -1,0 +1,14 @@
+[15-May-2025 01:58:07 America/Lima] PHP Fatal error:  Uncaught Error: Call to undefined function getCsrfToken() in C:\xampp\htdocs\luvia\views\admin\users.php:175
+Stack trace:
+#0 C:\xampp\htdocs\luvia\views\layouts\admin.php(169): require_once()
+#1 C:\xampp\htdocs\luvia\controllers\AdminController.php(175): require_once('C:\\xampp\\htdocs...')
+#2 C:\xampp\htdocs\luvia\public\index.php(137): AdminController->users(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\luvia\views\admin\users.php on line 175
+[15-May-2025 01:58:09 America/Lima] PHP Fatal error:  Uncaught Error: Call to undefined function getCsrfToken() in C:\xampp\htdocs\luvia\views\admin\user_edit.php:21
+Stack trace:
+#0 C:\xampp\htdocs\luvia\views\layouts\admin.php(169): require_once()
+#1 C:\xampp\htdocs\luvia\controllers\AdminController.php(250): require_once('C:\\xampp\\htdocs...')
+#2 C:\xampp\htdocs\luvia\public\index.php(137): AdminController->editUser(Array)
+#3 {main}
+  thrown in C:\xampp\htdocs\luvia\views\admin\user_edit.php on line 21

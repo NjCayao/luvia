@@ -6,6 +6,16 @@ define('APP_NAME', 'Luvia');
 define('APP_VERSION', '1.0.0');
 define('APP_URL', 'http://localhost/luvia/public'); // Cambiar en producción
 define('APP_ENV', 'development'); // 'development' o 'production'
+define('APP_DEBUG', true);  // Habilitar o deshabilitar el modo de depuración
+
+
+if (!defined('APP_URL')) {
+    // Para desarrollo, detectar automáticamente
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+    $domainName = $_SERVER['HTTP_HOST'];
+    $baseDir = dirname($_SERVER['SCRIPT_NAME']);
+    define('APP_URL', $protocol . $domainName . $baseDir);
+}
 
 // Configuración de zona horaria
 date_default_timezone_set('America/Lima');

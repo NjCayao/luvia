@@ -13,7 +13,7 @@
     <!-- /.card-header -->
     <div class="card-body">
         <form id="plan-form" method="POST" action="<?= url('/admin/plan/guardar') ?>">
-            <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
             <input type="hidden" name="plan_id" value="0">
             
             <div class="row">

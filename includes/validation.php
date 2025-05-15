@@ -203,3 +203,4 @@ function validateForm($data, $rules) {
     
     return $errors;
 }
+

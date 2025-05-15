@@ -207,12 +207,15 @@ class AdminController
         $pageHeader = 'Usuario: ' . ($user['email'] ?? $user['phone']);
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/view_user.php';
+        $viewFile = __DIR__ . '/../views/admin/user_detail.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
     }
 
+    /**
+     * Editar usuario - Asegurarse que este método esté correctamente implementado
+     */
     /**
      * Editar usuario
      */
@@ -235,12 +238,20 @@ class AdminController
         // Define la ruta al archivo de vista específica
         $viewFile = __DIR__ . '/../views/admin/user_edit.php';
 
+        // Verificar si el archivo existe
+        if (!file_exists($viewFile)) {
+            error_log("Vista no encontrada: $viewFile");
+            setFlashMessage('danger', 'Error interno: Archivo de vista no encontrado');
+            redirect('/admin/usuarios');
+            exit;
+        }
+
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
     }
 
     /**
-     * Actualizar usuario
+     * Actualizar usuario - Asegurarse que el procesamiento del formulario sea correcto
      */
     public function updateUser()
     {
@@ -280,19 +291,14 @@ class AdminController
         if (empty($email)) {
             $errors['email'] = 'El correo electrónico es obligatorio';
         } else {
-            $emailError = validateEmail($email);
-            if ($emailError) {
-                $errors['email'] = $emailError;
+            // Validar formato de email
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors['email'] = 'Formato de correo electrónico inválido';
             }
         }
 
         if (empty($phone)) {
             $errors['phone'] = 'El teléfono es obligatorio';
-        } else {
-            $phoneError = validatePhone($phone);
-            if ($phoneError) {
-                $errors['phone'] = $phoneError;
-            }
         }
 
         // Si hay errores, devolver respuesta JSON
@@ -355,6 +361,7 @@ class AdminController
                 'redirect' => url('/admin/usuario/' . $userId)
             ]);
         } catch (Exception $e) {
+            error_log('Error al actualizar usuario: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Error al actualizar usuario: ' . $e->getMessage()]);
         }
@@ -469,6 +476,14 @@ class AdminController
 
         // Define la ruta al archivo de vista específica
         $viewFile = __DIR__ . '/../views/admin/edit_profile.php';
+
+        // Verificar si el archivo existe
+        if (!file_exists($viewFile)) {
+            error_log("Vista no encontrada: $viewFile");
+            setFlashMessage('danger', 'Error interno: Archivo de vista no encontrado');
+            redirect('/admin/perfiles');
+            exit;
+        }
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -624,17 +639,31 @@ class AdminController
             exit;
         }
 
-        // Verificar perfil
         try {
+            // Actualizar perfil
             Profile::update($profileId, ['is_verified' => true]);
 
-            echo json_encode([
-                'success' => true,
-                'message' => 'Perfil verificado correctamente'
-            ]);
+            // Determinar tipo de respuesta (AJAX o normal)
+            if (isAjax()) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Perfil verificado correctamente',
+                    'redirect' => url('/admin/perfil/' . $profileId)
+                ]);
+            } else {
+                setFlashMessage('success', 'Perfil verificado correctamente');
+                redirect('/admin/perfil/' . $profileId);
+            }
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Error al verificar perfil: ' . $e->getMessage()]);
+            error_log('Error al verificar perfil: ' . $e->getMessage());
+
+            if (isAjax()) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Error al verificar perfil: ' . $e->getMessage()]);
+            } else {
+                setFlashMessage('danger', 'Error al verificar perfil: ' . $e->getMessage());
+                redirect('/admin/perfil/' . $profileId);
+            }
         }
 
         exit;
@@ -694,7 +723,7 @@ class AdminController
         $pageHeader = 'Pagos';
 
         // Define la ruta al archivo de vista específica
-       $viewFile = __DIR__ . '/../views/admin/payments.php';
+        $viewFile = __DIR__ . '/../views/admin/payments.php';
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -736,53 +765,53 @@ class AdminController
      * Gestión de suscripciones
      */
     public function subscriptions()
-{
-    // Filtros
-    $status = $_GET['status'] ?? '';
-    $userType = $_GET['user_type'] ?? '';
-    $search = $_GET['search'] ?? '';
+    {
+        // Filtros
+        $status = $_GET['status'] ?? '';
+        $userType = $_GET['user_type'] ?? '';
+        $search = $_GET['search'] ?? '';
 
-    // Paginación
-    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-    $limit = 20;
-    $offset = ($page - 1) * $limit;
+        // Paginación
+        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        $limit = 20;
+        $offset = ($page - 1) * $limit;
 
-    // Preparar filtros
-    $filters = [];
-    if (!empty($status)) {
-        $filters['status'] = $status;
+        // Preparar filtros
+        $filters = [];
+        if (!empty($status)) {
+            $filters['status'] = $status;
+        }
+        if (!empty($userType)) {
+            $filters['user_type'] = $userType;
+        }
+        if (!empty($search)) {
+            $filters['search'] = $search;
+        }
+
+        // Obtener suscripciones
+        $subscriptions = Subscription::getAll($limit, $offset, $filters);
+        $totalSubscriptions = Subscription::count($filters);
+
+        // Calcular páginas
+        $totalPages = ceil($totalSubscriptions / $limit);
+
+        // Estadísticas básicas
+        $stats = [
+            'active_count' => Subscription::count(array_merge($filters, ['status' => 'active'])),
+            'trial_count' => Subscription::count(array_merge($filters, ['status' => 'trial'])),
+            'expired_count' => Subscription::count(array_merge($filters, ['status' => 'expired'])),
+            'auto_renew_count' => Subscription::countAutoRenew($filters)
+        ];
+
+        $pageTitle = 'Gestión de Suscripciones';
+        $pageHeader = 'Suscripciones';
+
+        // Define la ruta al archivo de vista específica
+        $viewFile = __DIR__ . '/../views/admin/subscriptions.php';
+
+        // Renderiza la vista principal (que incluirá el contenido específico)
+        require_once __DIR__ . '/../views/layouts/admin.php';
     }
-    if (!empty($userType)) {
-        $filters['user_type'] = $userType;
-    }
-    if (!empty($search)) {
-        $filters['search'] = $search;
-    }
-
-    // Obtener suscripciones
-    $subscriptions = Subscription::getAll($limit, $offset, $filters);
-    $totalSubscriptions = Subscription::count($filters);
-
-    // Calcular páginas
-    $totalPages = ceil($totalSubscriptions / $limit);
-
-    // Estadísticas básicas
-    $stats = [
-        'active_count' => Subscription::count(array_merge($filters, ['status' => 'active'])),
-        'trial_count' => Subscription::count(array_merge($filters, ['status' => 'trial'])),
-        'expired_count' => Subscription::count(array_merge($filters, ['status' => 'expired'])),
-        'auto_renew_count' => Subscription::countAutoRenew($filters)
-    ];
-
-    $pageTitle = 'Gestión de Suscripciones';
-    $pageHeader = 'Suscripciones';
-
-    // Define la ruta al archivo de vista específica
-    $viewFile = __DIR__ . '/../views/admin/subscriptions.php';
-
-    // Renderiza la vista principal (que incluirá el contenido específico)
-    require_once __DIR__ . '/../views/layouts/admin.php';
-}
 
     /**
      * Ver detalle de suscripción
@@ -871,6 +900,14 @@ class AdminController
         // Define la ruta al archivo de vista específica
         $viewFile = __DIR__ . '/../views/admin/plan_edit.php';
 
+        // Verificar si el archivo existe
+        if (!file_exists($viewFile)) {
+            error_log("Vista no encontrada: $viewFile");
+            setFlashMessage('danger', 'Error interno: Archivo de vista no encontrado');
+            redirect('/admin/planes');
+            exit;
+        }
+
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
     }
@@ -884,7 +921,15 @@ class AdminController
         $pageHeader = 'Crear Plan';
 
         // Define la ruta al archivo de vista específica
-        $viewFile = __DIR__ . '/../views/admin/create_plan';
+        $viewFile = __DIR__ . '/../views/admin/plan_create.php';
+
+        // Verificar si el archivo existe
+        if (!file_exists($viewFile)) {
+            error_log("Vista no encontrada: $viewFile");
+            setFlashMessage('danger', 'Error interno: Archivo de vista no encontrado');
+            redirect('/admin/planes');
+            exit;
+        }
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
@@ -1041,15 +1086,17 @@ class AdminController
             exit;
         }
 
-        // Eliminar plan
         try {
+            // Eliminar plan
             Plan::delete($planId);
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Plan eliminado correctamente'
+                'message' => 'Plan eliminado correctamente',
+                'redirect' => url('/admin/planes')
             ]);
         } catch (Exception $e) {
+            error_log('Error al eliminar plan: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Error al eliminar plan: ' . $e->getMessage()]);
         }
@@ -1135,5 +1182,469 @@ class AdminController
 
         // Renderiza la vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/admin.php';
+    }
+
+    /**
+     * Gestiona las solicitudes de verificación
+     */
+    public function verifications()
+    {
+        // Filtros
+        $status = $_GET['status'] ?? '';
+        $type = $_GET['type'] ?? '';
+        $search = $_GET['search'] ?? '';
+
+        // Paginación
+        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+
+        // Preparar filtros
+        $filters = [];
+        if (!empty($status)) {
+            $filters['status'] = $status;
+        }
+        if (!empty($type)) {
+            $filters['verification_type'] = $type;
+        }
+        if (!empty($search)) {
+            $filters['search'] = $search;
+        }
+
+        // Obtener verificaciones
+        // Aquí es necesario un modelo VerificationModel
+        require_once __DIR__ . '/../models/Verification.php';
+        $verifications = Verification::getAll($limit, $offset, $filters);
+        $totalVerifications = Verification::count($filters);
+        $pendingCount = Verification::count(['status' => 'pending']);
+
+        // Calcular páginas
+        $totalPages = ceil($totalVerifications / $limit);
+
+        $pageTitle = 'Solicitudes de Verificación';
+        $pageHeader = 'Verificaciones';
+
+        // Define la ruta al archivo de vista específica
+        $viewFile = __DIR__ . '/../views/admin/verification.php';
+
+        // Renderiza la vista principal
+        require_once __DIR__ . '/../views/layouts/admin.php';
+    }
+
+    /**
+     * Cambiar estado de usuario (activo/suspendido)
+     */
+    public function toggleUserStatus()
+    {
+        // Para propósitos de depuración
+        error_log('toggleUserStatus called');
+        error_log('POST data: ' . print_r($_POST, true));
+
+        // Verificar método
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            error_log("Método incorrecto: " . $_SERVER['REQUEST_METHOD']);
+            setFlashMessage('danger', 'Método no permitido');
+            redirect('/admin/usuarios');
+            exit;
+        }
+
+        // Verificar token CSRF
+        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+            error_log("Token CSRF inválido");
+            setFlashMessage('danger', 'Token CSRF inválido');
+            redirect('/admin/usuarios');
+            exit;
+        }
+
+        // Obtener datos
+        $userId = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+        $status = isset($_POST['status']) ? $_POST['status'] : '';
+
+        // Registrar para debug
+        error_log("toggleUserStatus - userId: $userId, status: $status");
+
+        // Validar datos
+        if ($userId <= 0) {
+            error_log("ID de usuario inválido: $userId");
+            setFlashMessage('danger', 'ID de usuario inválido');
+            redirect('/admin/usuarios');
+            exit;
+        }
+
+        if (!in_array($status, ['active', 'suspended'])) {
+            error_log("Estado inválido: $status");
+            setFlashMessage('danger', 'Estado inválido');
+            redirect('/admin/usuarios');
+            exit;
+        }
+
+        try {
+            // Verificar que el usuario exista
+            $user = User::getById($userId);
+
+            error_log("Resultado de User::getById: " . ($user ? json_encode($user) : 'false'));
+
+            if (!$user) {
+                error_log("Usuario no encontrado con ID: $userId");
+                setFlashMessage('danger', 'Usuario no encontrado');
+                redirect('/admin/usuarios');
+                exit;
+            }
+
+            // No permitir cambiar el estado de un administrador
+            if ($user['user_type'] === 'admin') {
+                error_log("Intento de cambiar estado de un administrador");
+                setFlashMessage('danger', 'No se puede cambiar el estado de un administrador');
+                redirect('/admin/usuarios');
+                exit;
+            }
+
+            // Actualizar estado
+            error_log("Intentando actualizar usuario $userId a estado $status");
+            $result = User::update($userId, ['status' => $status]);
+            error_log("Resultado de actualización: " . ($result ? 'true' : 'false'));
+
+            if ($result) {
+                $message = $status === 'active' ? 'Usuario activado correctamente' : 'Usuario suspendido correctamente';
+                setFlashMessage('success', $message);
+            } else {
+                error_log("Error al actualizar usuario: No se actualizó ningún registro");
+                setFlashMessage('danger', 'No se pudo actualizar el estado del usuario');
+            }
+        } catch (Exception $e) {
+            error_log('Error en toggleUserStatus: ' . $e->getMessage());
+            setFlashMessage('danger', 'Error al cambiar el estado del usuario: ' . $e->getMessage());
+        }
+
+        // Redirigir de vuelta a la lista de usuarios
+        redirect('/admin/usuarios');
+        exit;
+    }
+
+    /**
+     * Actualiza el estado de un pago
+     */
+    public function updatePaymentStatus()
+    {
+        // Verificar método
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Método no permitido']);
+            exit;
+        }
+
+        // Verificar token CSRF
+        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Token CSRF inválido']);
+            exit;
+        }
+
+        // Obtener datos
+        $paymentId = $_POST['payment_id'] ?? 0;
+        $status = $_POST['payment_status'] ?? '';
+        $errorMessage = $_POST['error_message'] ?? '';
+
+        // Validar estado
+        if (!in_array($status, ['pending', 'processing', 'completed', 'failed', 'refunded'])) {
+            setFlashMessage('danger', 'Estado inválido');
+            redirect('/admin/pagos');
+            exit;
+        }
+
+        // Actualizar estado
+        try {
+            $updateData = ['payment_status' => $status];
+
+            if ($status === 'failed' && !empty($errorMessage)) {
+                $updateData['error_message'] = $errorMessage;
+            }
+
+            Payment::update($paymentId, $updateData);
+
+            // Si se completa, activar suscripción
+            if ($status === 'completed') {
+                $payment = Payment::getById($paymentId);
+
+                if ($payment) {
+                    // Activar suscripción
+                    $this->activateSubscription($payment['user_id'], $payment['plan_id'], $paymentId);
+                }
+            }
+
+            setFlashMessage('success', 'Estado de pago actualizado correctamente');
+            redirect('/admin/pago/' . $paymentId);
+        } catch (Exception $e) {
+            setFlashMessage('danger', 'Error al actualizar estado: ' . $e->getMessage());
+            redirect('/admin/pago/' . $paymentId);
+        }
+
+        exit;
+    }
+
+    /**
+     * Activa o extiende una suscripción
+     */
+    private function activateSubscription($userId, $planId, $paymentId)
+    {
+        // Obtener datos del plan
+        $plan = Plan::getById($planId);
+
+        if (!$plan) {
+            throw new Exception('Plan no encontrado');
+        }
+
+        // Verificar si ya existe una suscripción activa
+        $existingSubscription = Subscription::getActiveByUserId($userId);
+
+        $startDate = date('Y-m-d H:i:s');
+        $endDate = date('Y-m-d H:i:s', strtotime('+' . $plan['duration'] . ' days'));
+
+        if ($existingSubscription) {
+            // Extender suscripción existente
+            $currentEndDate = new DateTime($existingSubscription['end_date']);
+            $now = new DateTime();
+
+            // Si la suscripción ya venció, comenzar desde hoy
+            if ($currentEndDate < $now) {
+                $newEndDate = $endDate;
+            } else {
+                // Si está activa, extender desde la fecha de fin actual
+                $newEndDate = date('Y-m-d H:i:s', strtotime($existingSubscription['end_date'] . ' +' . $plan['duration'] . ' days'));
+            }
+
+            Subscription::update($existingSubscription['id'], [
+                'plan_id' => $planId,
+                'payment_id' => $paymentId,
+                'status' => 'active',
+                'end_date' => $newEndDate
+            ]);
+        } else {
+            // Crear nueva suscripción
+            Subscription::create([
+                'user_id' => $userId,
+                'plan_id' => $planId,
+                'payment_id' => $paymentId,
+                'status' => 'active',
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'auto_renew' => false
+            ]);
+        }
+    }
+
+    /**
+     * Cambiar estado de suscripción
+     */
+    public function changeSubscriptionStatus()
+    {
+        // Verificar método
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Método no permitido']);
+            exit;
+        }
+
+        // Verificar token CSRF
+        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Token CSRF inválido']);
+            exit;
+        }
+
+        // Obtener datos
+        $subscriptionId = $_POST['subscription_id'] ?? 0;
+        $status = $_POST['status'] ?? '';
+
+        // Validar estado
+        if (!in_array($status, ['active', 'expired', 'cancelled', 'trial'])) {
+            setFlashMessage('danger', 'Estado inválido');
+            redirect('/admin/suscripciones');
+            exit;
+        }
+
+        // Actualizar estado
+        try {
+            Subscription::update($subscriptionId, ['status' => $status]);
+
+            setFlashMessage('success', 'Estado de suscripción actualizado correctamente');
+            redirect('/admin/suscripcion/' . $subscriptionId);
+        } catch (Exception $e) {
+            setFlashMessage('danger', 'Error al actualizar estado: ' . $e->getMessage());
+            redirect('/admin/suscripcion/' . $subscriptionId);
+        }
+
+        exit;
+    }
+
+    /**
+     * Cancelar suscripción
+     */
+    public function cancelSubscription()
+    {
+        // Verificar método
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Método no permitido']);
+            exit;
+        }
+
+        // Verificar token CSRF
+        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Token CSRF inválido']);
+            exit;
+        }
+
+        // Obtener ID
+        $subscriptionId = $_POST['subscription_id'] ?? 0;
+
+        // Verificar que exista
+        $subscription = Subscription::getById($subscriptionId);
+        if (!$subscription) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Suscripción no encontrada']);
+            exit;
+        }
+
+        try {
+            // Actualizar suscripción
+            Subscription::update($subscriptionId, ['auto_renew' => false]);
+
+            // Determinar tipo de respuesta
+            if (isAjax()) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'La renovación automática ha sido cancelada',
+                    'redirect' => url('/admin/suscripcion/' . $subscriptionId)
+                ]);
+            } else {
+                setFlashMessage('success', 'La renovación automática ha sido cancelada');
+                redirect('/admin/suscripcion/' . $subscriptionId);
+            }
+        } catch (Exception $e) {
+            error_log('Error al cancelar suscripción: ' . $e->getMessage());
+
+            if (isAjax()) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Error al cancelar renovación: ' . $e->getMessage()]);
+            } else {
+                setFlashMessage('danger', 'Error al cancelar renovación: ' . $e->getMessage());
+                redirect('/admin/suscripcion/' . $subscriptionId);
+            }
+        }
+
+        exit;
+    }
+
+    /**
+     * Actualizar verificación
+     */
+    public function updateVerification()
+    {
+        // Verificar método
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Método no permitido']);
+            exit;
+        }
+
+        // Verificar token CSRF
+        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Token CSRF inválido']);
+            exit;
+        }
+
+        // Obtener datos
+        $verificationId = $_POST['verification_id'] ?? 0;
+        $userId = $_POST['user_id'] ?? 0;
+        $status = $_POST['status'] ?? '';
+        $notes = $_POST['notes'] ?? '';
+
+        // Validar estado
+        if (!in_array($status, ['approved', 'rejected'])) {
+            setFlashMessage('danger', 'Estado inválido');
+            redirect('/admin/verificacion');
+            exit;
+        }
+
+        try {
+            // Actualizar verificación
+            require_once __DIR__ . '/../models/Verification.php';
+            Verification::updateStatus($verificationId, $status, $notes, $_SESSION['user_id']);
+
+            // Si es aprobada y es tipo ID, marcar al usuario como verificado
+            $verification = Verification::getById($verificationId);
+
+            if ($status === 'approved' && $verification && $verification['verification_type'] === 'id_card') {
+                // Obtener perfil del usuario
+                $profile = Profile::getByUserId($userId);
+
+                if ($profile) {
+                    // Marcar perfil como verificado
+                    Profile::update($profile['id'], ['is_verified' => true]);
+                }
+            }
+
+            setFlashMessage('success', 'Verificación ' . ($status === 'approved' ? 'aprobada' : 'rechazada') . ' correctamente');
+        } catch (Exception $e) {
+            setFlashMessage('danger', 'Error al procesar verificación: ' . $e->getMessage());
+        }
+
+        redirect('/admin/verificacion');
+        exit;
+    }
+
+    /**
+     * Eliminar usuario
+     */
+    public function deleteUser()
+    {
+        // Verificar método
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Método no permitido']);
+            exit;
+        }
+
+        // Verificar token CSRF
+        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Token CSRF inválido']);
+            exit;
+        }
+
+        // Obtener ID de usuario
+        $userId = $_POST['user_id'] ?? 0;
+
+        // Verificar que el usuario exista
+        $user = User::getById($userId);
+
+        if (!$user) {
+            setFlashMessage('danger', 'Usuario no encontrado');
+            redirect('/admin/usuarios');
+            exit;
+        }
+
+        // No permitir eliminar administradores
+        if ($user['user_type'] === 'admin') {
+            setFlashMessage('danger', 'No se pueden eliminar administradores');
+            redirect('/admin/usuarios');
+            exit;
+        }
+
+        try {
+            // Marcar usuario como eliminado (soft delete)
+            User::update($userId, ['status' => 'deleted']);
+
+            setFlashMessage('success', 'Usuario eliminado correctamente');
+            redirect('/admin/usuarios');
+        } catch (Exception $e) {
+            setFlashMessage('danger', 'Error al eliminar usuario: ' . $e->getMessage());
+            redirect('/admin/usuario/' . $userId);
+        }
+
+        exit;
     }
 }

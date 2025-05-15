@@ -30,11 +30,9 @@
                                     <b>ID:</b> <span class="float-right"><?= $subscription['id'] ?></span>
                                 </li>
                                 <li class="list-group-item">
-                                    <b>Estado:</b> 
+                                    <b>Estado:</b>
                                     <span class="float-right badge 
-                                        <?= $subscription['status'] === 'active' ? 'badge-success' : 
-                                           ($subscription['status'] === 'trial' ? 'badge-info' : 
-                                           ($subscription['status'] === 'expired' ? 'badge-warning' : 'badge-secondary')) ?>">
+                                        <?= $subscription['status'] === 'active' ? 'badge-success' : ($subscription['status'] === 'trial' ? 'badge-info' : ($subscription['status'] === 'expired' ? 'badge-warning' : 'badge-secondary')) ?>">
                                         <?= ucfirst($subscription['status']) ?>
                                     </span>
                                 </li>
@@ -45,7 +43,7 @@
                                     <b>Fecha de fin:</b> <span class="float-right"><?= formatDate($subscription['end_date']) ?></span>
                                 </li>
                                 <li class="list-group-item">
-                                    <b>Auto-renovación:</b> 
+                                    <b>Auto-renovación:</b>
                                     <span class="float-right badge <?= $subscription['auto_renew'] ? 'badge-success' : 'badge-secondary' ?>">
                                         <?= $subscription['auto_renew'] ? 'Activada' : 'Desactivada' ?>
                                     </span>
@@ -57,21 +55,21 @@
                                     <b>Última actualización:</b> <span class="float-right"><?= formatDate($subscription['updated_at']) ?></span>
                                 </li>
                             </ul>
-                            
+
                             <?php
                             // Calcular días restantes
                             $now = new DateTime();
                             $endDate = new DateTime($subscription['end_date']);
-                            $daysLeft = $subscription['status'] === 'active' || $subscription['status'] === 'trial' 
-                                     ? max(0, $now->diff($endDate)->days) : 0;
-                            
+                            $daysLeft = $subscription['status'] === 'active' || $subscription['status'] === 'trial'
+                                ? max(0, $now->diff($endDate)->days) : 0;
+
                             // Calcular progreso
                             $startDate = new DateTime($subscription['start_date']);
                             $totalDays = $startDate->diff($endDate)->days;
                             $daysUsed = $totalDays - $daysLeft;
                             $percent = $totalDays > 0 ? ($daysUsed / $totalDays) * 100 : 0;
                             ?>
-                            
+
                             <?php if ($subscription['status'] === 'active' || $subscription['status'] === 'trial'): ?>
                                 <div class="progress-group">
                                     <span class="progress-text">Progreso de suscripción</span>
@@ -83,7 +81,7 @@
                                     </div>
                                 </div>
                             <?php endif; ?>
-                            
+
                             <div class="mt-3">
                                 <?php if ($subscription['status'] === 'active' || $subscription['status'] === 'trial'): ?>
                                     <button class="btn btn-warning btn-block toggle-status-btn" data-id="<?= $subscription['id'] ?>" data-status="expired">
@@ -98,7 +96,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-6">
                     <!-- Información del usuario -->
                     <div class="card mb-4">
@@ -117,13 +115,13 @@
                                     <b>Teléfono:</b> <span class="float-right"><?= htmlspecialchars($user['phone']) ?></span>
                                 </li>
                                 <li class="list-group-item">
-                                    <b>Tipo:</b> 
+                                    <b>Tipo:</b>
                                     <span class="float-right badge <?= $user['user_type'] === 'admin' ? 'badge-danger' : ($user['user_type'] === 'advertiser' ? 'badge-warning' : 'badge-info') ?>">
                                         <?= $user['user_type'] === 'admin' ? 'Admin' : ($user['user_type'] === 'advertiser' ? 'Anunciante' : 'Visitante') ?>
                                     </span>
                                 </li>
                                 <li class="list-group-item">
-                                    <b>Estado:</b> 
+                                    <b>Estado:</b>
                                     <span class="float-right badge <?= $user['status'] === 'active' ? 'badge-success' : ($user['status'] === 'pending' ? 'badge-warning' : 'badge-danger') ?>">
                                         <?= ucfirst($user['status']) ?>
                                     </span>
@@ -134,7 +132,7 @@
                             </a>
                         </div>
                     </div>
-                    
+
                     <!-- Información del plan -->
                     <div class="card">
                         <div class="card-header bg-success">
@@ -149,7 +147,7 @@
                                     <b>Nombre:</b> <span class="float-right"><?= htmlspecialchars($plan['name']) ?></span>
                                 </li>
                                 <li class="list-group-item">
-                                    <b>Tipo:</b> 
+                                    <b>Tipo:</b>
                                     <span class="float-right">
                                         <?= $plan['user_type'] === 'advertiser' ? 'Anunciante' : 'Visitante' ?>
                                     </span>
@@ -173,7 +171,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Pago relacionado -->
             <?php if ($payment): ?>
                 <div class="row mt-4">
@@ -190,11 +188,9 @@
                                     </div>
                                     <div class="col-md-4">
                                         <p><strong>Método:</strong> <?= ucfirst($payment['payment_method']) ?></p>
-                                        <p><strong>Estado:</strong> 
+                                        <p><strong>Estado:</strong>
                                             <span class="badge 
-                                                <?= $payment['payment_status'] === 'completed' ? 'badge-success' : 
-                                                   ($payment['payment_status'] === 'pending' ? 'badge-warning' : 
-                                                   ($payment['payment_status'] === 'processing' ? 'badge-info' : 'badge-danger')) ?>">
+                                                <?= $payment['payment_status'] === 'completed' ? 'badge-success' : ($payment['payment_status'] === 'pending' ? 'badge-warning' : ($payment['payment_status'] === 'processing' ? 'badge-info' : 'badge-danger')) ?>">
                                                 <?= ucfirst($payment['payment_status']) ?>
                                             </span>
                                         </p>
@@ -227,10 +223,12 @@
             </div>
             <div class="modal-body">
                 <p id="subscriptionStatusMessage">¿Estás seguro que deseas cambiar el estado de esta suscripción?</p>
-                <form id="subscriptionStatusForm" method="POST" action="<?= url('/admin/suscripcion/cambiar-estado') ?>">
-                    <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
-                    <input type="hidden" name="subscription_id" id="subscriptionId" value="">
-                    <input type="hidden" name="status" id="subscriptionStatus" value="">
+                <form id="cancelSubscriptionForm" method="POST" action="<?= url('/admin/suscripcion/cancelar') ?>">
+                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                    <input type="hidden" name="subscription_id" value="<?= $subscription['id'] ?>">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-ban"></i> Cancelar Renovación Automática
+                    </button>
                 </form>
             </div>
             <div class="modal-footer">
@@ -242,32 +240,32 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Manejar botones de cambio de estado
-    document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const subscriptionId = this.getAttribute('data-id');
-            const newStatus = this.getAttribute('data-status');
-            
-            document.getElementById('subscriptionId').value = subscriptionId;
-            document.getElementById('subscriptionStatus').value = newStatus;
-            
-            let message = '';
-            if (newStatus === 'active') {
-                message = '¿Estás seguro que deseas reactivar esta suscripción?';
-            } else if (newStatus === 'expired') {
-                message = '¿Estás seguro que deseas marcar esta suscripción como expirada?';
-            }
-            
-            document.getElementById('subscriptionStatusMessage').textContent = message;
-            
-            $('#subscriptionStatusModal').modal('show');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejar botones de cambio de estado
+        document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const subscriptionId = this.getAttribute('data-id');
+                const newStatus = this.getAttribute('data-status');
+
+                document.getElementById('subscriptionId').value = subscriptionId;
+                document.getElementById('subscriptionStatus').value = newStatus;
+
+                let message = '';
+                if (newStatus === 'active') {
+                    message = '¿Estás seguro que deseas reactivar esta suscripción?';
+                } else if (newStatus === 'expired') {
+                    message = '¿Estás seguro que deseas marcar esta suscripción como expirada?';
+                }
+
+                document.getElementById('subscriptionStatusMessage').textContent = message;
+
+                $('#subscriptionStatusModal').modal('show');
+            });
+        });
+
+        // Confirmar cambio de estado
+        document.getElementById('confirmStatusChange').addEventListener('click', function() {
+            document.getElementById('subscriptionStatusForm').submit();
         });
     });
-    
-    // Confirmar cambio de estado
-    document.getElementById('confirmStatusChange').addEventListener('click', function() {
-        document.getElementById('subscriptionStatusForm').submit();
-    });
-});
 </script>

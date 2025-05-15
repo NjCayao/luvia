@@ -36,13 +36,13 @@
                                     <b>Teléfono:</b> <span class="float-right"><?= htmlspecialchars($user['phone']) ?></span>
                                 </li>
                                 <li class="list-group-item">
-                                    <b>Tipo:</b> 
+                                    <b>Tipo:</b>
                                     <span class="float-right badge <?= $user['user_type'] === 'admin' ? 'badge-danger' : ($user['user_type'] === 'advertiser' ? 'badge-warning' : 'badge-info') ?>">
                                         <?= $user['user_type'] === 'admin' ? 'Admin' : ($user['user_type'] === 'advertiser' ? 'Anunciante' : 'Visitante') ?>
                                     </span>
                                 </li>
                                 <li class="list-group-item">
-                                    <b>Estado:</b> 
+                                    <b>Estado:</b>
                                     <span class="float-right badge <?= $user['status'] === 'active' ? 'badge-success' : ($user['status'] === 'pending' ? 'badge-warning' : 'badge-danger') ?>">
                                         <?= ucfirst($user['status']) ?>
                                     </span>
@@ -61,11 +61,11 @@
                                     <i class="fas fa-edit"></i> Editar
                                 </a>
                                 <?php if ($user['user_type'] !== 'admin'): ?>
-                                    <button type="button" class="btn btn-<?= $user['status'] === 'active' ? 'warning' : 'success' ?> toggle-status-btn" 
-                                            data-id="<?= $user['id'] ?>" 
-                                            data-status="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>"
-                                            data-current="<?= $user['status'] ?>">
-                                        <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i> 
+                                    <button type="button" class="btn btn-<?= $user['status'] === 'active' ? 'warning' : 'success' ?> toggle-status-btn"
+                                        data-id="<?= $user['id'] ?>"
+                                        data-status="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>"
+                                        data-current="<?= $user['status'] ?>">
+                                        <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
                                         <?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?>
                                     </button>
                                 <?php endif; ?>
@@ -73,7 +73,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-8">
                     <?php if ($profile): ?>
                         <!-- Información del perfil -->
@@ -90,10 +90,10 @@
                                 <div class="row">
                                     <div class="col-md-4 text-center">
                                         <?php if (!empty($profile['main_photo'])): ?>
-                                            <img src="<?= url('uploads/photos/' . $profile['main_photo']) ?>" 
+                                            <img src="<?= url('uploads/photos/' . $profile['main_photo']) ?>"
                                                 alt="Foto de perfil" class="img-fluid img-thumbnail" style="max-height: 200px;">
                                         <?php else: ?>
-                                            <img src="<?= url('img/profile-placeholder.jpg') ?>" 
+                                            <img src="<?= url('img/profile-placeholder.jpg') ?>"
                                                 alt="Sin foto" class="img-fluid img-thumbnail" style="max-height: 200px;">
                                         <?php endif; ?>
                                     </div>
@@ -102,7 +102,7 @@
                                         <p><strong>Género:</strong> <?= ucfirst($profile['gender']) ?></p>
                                         <p><strong>Ciudad:</strong> <?= htmlspecialchars($profile['city']) ?></p>
                                         <p><strong>WhatsApp:</strong> <?= htmlspecialchars($profile['whatsapp']) ?></p>
-                                        <p><strong>Verificado:</strong> 
+                                        <p><strong>Verificado:</strong>
                                             <?php if ($profile['is_verified']): ?>
                                                 <span class="badge badge-success">Sí</span>
                                             <?php else: ?>
@@ -116,7 +116,7 @@
                             </div>
                         </div>
                     <?php endif; ?>
-                    
+
                     <!-- Suscripciones -->
                     <div class="card mb-4">
                         <div class="card-header bg-success">
@@ -145,8 +145,7 @@
                                                 <td><?= htmlspecialchars($subscription['plan_name']) ?></td>
                                                 <td>
                                                     <span class="badge 
-                                                        <?= $subscription['status'] === 'active' ? 'badge-success' : 
-                                                           ($subscription['status'] === 'trial' ? 'badge-info' : 'badge-secondary') ?>">
+                                                        <?= $subscription['status'] === 'active' ? 'badge-success' : ($subscription['status'] === 'trial' ? 'badge-info' : 'badge-secondary') ?>">
                                                         <?= ucfirst($subscription['status']) ?>
                                                     </span>
                                                 </td>
@@ -171,7 +170,7 @@
                             <?php endif; ?>
                         </div>
                     </div>
-                    
+
                     <!-- Pagos -->
                     <div class="card">
                         <div class="card-header bg-warning">
@@ -203,9 +202,7 @@
                                                 <td><?= ucfirst($payment['payment_method']) ?></td>
                                                 <td>
                                                     <span class="badge 
-                                                        <?= $payment['payment_status'] === 'completed' ? 'badge-success' : 
-                                                           ($payment['payment_status'] === 'pending' ? 'badge-warning' : 
-                                                           ($payment['payment_status'] === 'processing' ? 'badge-info' : 'badge-danger')) ?>">
+                                                        <?= $payment['payment_status'] === 'completed' ? 'badge-success' : ($payment['payment_status'] === 'pending' ? 'badge-warning' : ($payment['payment_status'] === 'processing' ? 'badge-info' : 'badge-danger')) ?>">
                                                         <?= ucfirst($payment['payment_status']) ?>
                                                     </span>
                                                 </td>
@@ -240,7 +237,7 @@
             <div class="modal-body">
                 <p id="statusMessage">¿Estás seguro que deseas cambiar el estado de este usuario?</p>
                 <form id="statusForm" method="POST" action="<?= url('/admin/usuario/cambiar-estado') ?>">
-                    <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="user_id" id="userId" value="">
                     <input type="hidden" name="status" id="userStatus" value="">
                 </form>
@@ -260,27 +257,13 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             const userId = this.getAttribute('data-id');
             const newStatus = this.getAttribute('data-status');
-            const currentStatus = this.getAttribute('data-current');
             
             document.getElementById('userId').value = userId;
             document.getElementById('userStatus').value = newStatus;
             
-            let message = '';
-            if (newStatus === 'active') {
-                message = '¿Estás seguro que deseas activar este usuario?';
-            } else if (newStatus === 'suspended') {
-                message = '¿Estás seguro que deseas suspender este usuario? Esto bloqueará su acceso a la plataforma.';
-            }
-            
-            document.getElementById('statusMessage').textContent = message;
-            
-            $('#statusModal').modal('show');
+            const form = document.getElementById('statusForm');
+            form.submit();
         });
-    });
-    
-    // Confirmar cambio de estado
-    document.getElementById('confirmStatusChange').addEventListener('click', function() {
-        document.getElementById('statusForm').submit();
     });
 });
 </script>

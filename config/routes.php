@@ -335,4 +335,98 @@ $routes = [
         'admin' => true,
         'method' => 'POST'
     ],
+
+    // Rutas faltantes para administración
+    '/admin/perfil/{id}/editar' => [
+        'controller' => 'AdminController',
+        'action' => 'editProfile',
+        'auth' => true,
+        'admin' => true
+    ],
+    '/admin/perfil/actualizar' => [
+        'controller' => 'AdminController',
+        'action' => 'updateProfile',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ],
+    '/admin/perfil/verificar' => [
+        'controller' => 'AdminController',
+        'action' => 'verifyProfile',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ],
+    '/admin/pago/{id}' => [
+        'controller' => 'AdminController',
+        'action' => 'viewPayment',
+        'auth' => true,
+        'admin' => true
+    ],
+    '/admin/pago/actualizar-estado' => [
+        'controller' => 'AdminController',
+        'action' => 'updatePaymentStatus',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ],
+    '/admin/suscripcion/{id}' => [
+        'controller' => 'AdminController',
+        'action' => 'viewSubscription',
+        'auth' => true,
+        'admin' => true
+    ],
+    '/admin/suscripcion/cambiar-estado' => [
+        'controller' => 'AdminController',
+        'action' => 'changeSubscriptionStatus',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ],
+    '/admin/suscripcion/cancelar' => [
+        'controller' => 'AdminController',
+        'action' => 'cancelSubscription',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ],
+    '/admin/plan/{id}/editar' => [
+        'controller' => 'AdminController',
+        'action' => 'editPlan',
+        'auth' => true,
+        'admin' => true
+    ],
+    '/admin/planes/crear' => [
+        'controller' => 'AdminController',
+        'action' => 'createPlan',
+        'auth' => true,
+        'admin' => true
+    ],
+    '/admin/plan/guardar' => [
+        'controller' => 'AdminController',
+        'action' => 'savePlan',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ],
+    '/admin/plan/eliminar' => [
+        'controller' => 'AdminController',
+        'action' => 'deletePlan',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ],
+    '/admin/verificacion' => [
+        'controller' => 'AdminController',
+        'action' => 'verifications',
+        'auth' => true,
+        'admin' => true
+    ],
+    '/admin/verificacion/actualizar' => [
+        'controller' => 'AdminController',
+        'action' => 'updateVerification',
+        'auth' => true,
+        'admin' => true,
+        'method' => 'POST'
+    ]
 ];

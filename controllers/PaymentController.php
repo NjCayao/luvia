@@ -198,7 +198,7 @@ class PaymentController {
                 'error' => 'Error al procesar el pago: ' . $e->getMessage()
             ]);
         }
-        exit
+        exit;
     }
     
     // Manejar confirmación de pago

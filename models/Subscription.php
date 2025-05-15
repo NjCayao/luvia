@@ -6,7 +6,7 @@ require_once __DIR__ . '/../models/Plan.php';
 
 class Subscription
 {
-    
+
 
     /**
      * Obtiene suscripciones por usuario
@@ -90,20 +90,29 @@ class Subscription
     {
         $conn = getDbConnection();
 
-        $setFields = [];
+        $setClause = '';
         $params = [];
 
-        foreach ($data as $field => $value) {
-            $setFields[] = "$field = ?";
-            $params[] = $value;
+        foreach ($data as $key => $value) {
+            if (!empty($setClause)) {
+                $setClause .= ', ';
+            }
+            $setClause .= "$key = :$key";
+            $params[":$key"] = $value;
         }
 
-        $params[] = $id;
+        $params[':id'] = $id;
 
-        $sql = "UPDATE subscriptions SET " . implode(', ', $setFields) . " WHERE id = ?";
-        $stmt = $conn->prepare($sql);
+        $sql = "UPDATE subscriptions SET $setClause WHERE id = :id";
 
-        return $stmt->execute($params);
+        try {
+            $stmt = $conn->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('Error al actualizar suscripción: ' . $e->getMessage());
+            throw new Exception('Error al actualizar suscripción: ' . $e->getMessage());
+        }
     }
 
     /**
