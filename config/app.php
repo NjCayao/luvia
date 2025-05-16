@@ -4,7 +4,13 @@
 // Información básica de la aplicación
 define('APP_NAME', 'Luvia');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'http://localhost/luvia/public'); // Cambiar en producción
+// define('APP_URL', 'http://localhost/luvia/public'); 
+
+// Base URL sin "/public"
+define('PUBLIC_URL', 'http://localhost/luvia'); // Cambiar en producción
+define('APP_URL', PUBLIC_URL . '/public');
+
+
 define('APP_ENV', 'development'); // 'development' o 'production'
 define('APP_DEBUG', true);  // Habilitar o deshabilitar el modo de depuración
 

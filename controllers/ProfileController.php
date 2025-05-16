@@ -1400,4 +1400,54 @@ class ProfileController
                 return 30; // Por defecto, un mes
         }
     }
+
+    /**
+     * Muestra el perfil del usuario
+     */
+    public function showProfile()
+    {
+        // Verificar que el usuario esté logueado
+        if (!isLoggedIn()) {
+            setFlashMessage('warning', 'Debe iniciar sesión para acceder a esta página');
+            redirect('/login');
+            exit;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $user = User::getById($userId);
+
+        // Obtener perfil si es anunciante
+        $profile = null;
+        if ($user['user_type'] === 'advertiser') {
+            $profile = Profile::getByUserId($userId);
+        }
+
+        // Si no tiene perfil, redirigir a creación
+        if ($user['user_type'] === 'advertiser' && !$profile) {
+            setFlashMessage('warning', 'Primero debe crear su perfil');
+            redirect('/usuario/editar');
+            exit;
+        }
+
+        // Obtener medios (fotos y videos)
+        $photos = [];
+        $videos = [];
+        if ($profile) {
+            $photos = Media::getPhotosByProfileId($profile['id']);
+            $videos = Media::getVideosByProfileId($profile['id']);
+        }
+
+        // Obtener tarifas
+        $rates = [];
+        if ($profile) {
+            $rates = Rate::getByProfileId($profile['id']);
+        }
+
+        $pageTitle = 'Mi Perfil';
+        $pageHeader = 'Información de Perfil';
+
+        // Renderizar vista
+        $viewFile = __DIR__ . '/../views/profile/view.php';
+        require_once __DIR__ . '/../views/layouts/main.php';
+    }
 }

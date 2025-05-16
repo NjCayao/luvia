@@ -1,0 +1,272 @@
+/* 
+ * media-protection.css - Estilos para protección y marcas de agua 
+ * Parte del sistema Luvia.pe
+ */
+
+/* Contenedores protegidos */
+.protected-photo-container,
+.protected-video-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.25rem;
+    background-color: #f8f9fa;
+}
+
+/* Contenedor de fotos */
+.protected-photo-container {
+    height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Imagen adaptada para ver completa */
+.photo-preview {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.3s;
+}
+
+/* Efecto hover sutil */
+.protected-photo-container:hover .photo-preview {
+    transform: scale(1.03);
+}
+
+/* Capa de protección */
+.photo-protection-layer,
+.video-protection-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    background-color: transparent;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Marca de agua para fotos */
+.photo-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 
+        -2px -2px 0 rgba(0, 0, 0, 0.7),
+        2px -2px 0 rgba(0, 0, 0, 0.7),
+        -2px 2px 0 rgba(0, 0, 0, 0.7),
+        2px 2px 0 rgba(0, 0, 0, 0.7);
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: 10;
+    padding: 5px 10px;
+    border-radius: 5px;
+    /* background-color: rgba(0, 0, 0, 0.3); */
+    user-select: none;
+}
+
+/* Marca de agua para videos */
+.video-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 
+        -2px -2px 0 rgba(0, 0, 0, 0.7),
+        2px -2px 0 rgba(0, 0, 0, 0.7),
+        -2px 2px 0 rgba(0, 0, 0, 0.7),
+        2px 2px 0 rgba(0, 0, 0, 0.7);
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: 10;
+    padding: 5px 10px;
+    border-radius: 5px;
+    /* background-color: rgba(0, 0, 0, 0.3); */
+    user-select: none;
+}
+
+/* Estilos para el carrusel modal */
+.photo-carousel-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 2000;
+}
+
+.carousel-container {
+    position: relative;
+    width: 80%;
+    max-width: 1000px;
+    height: 80vh;
+    margin: 0 auto;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.carousel-slide {
+    display: none;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+}
+
+.carousel-slide.active {
+    display: block;
+}
+
+.carousel-image {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    border: 3px solid white;
+    border-radius: 5px;
+}
+
+.carousel-controls {
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    z-index: 2010;
+}
+
+.carousel-control {
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: none;
+    font-size: 24px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 10px;
+}
+
+.carousel-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: white;
+    font-size: 30px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 2020;
+}
+
+.carousel-counter {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 16px;
+    z-index: 2010;
+}
+
+.carousel-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 
+        -3px -3px 0 rgba(0, 0, 0, 0.7),
+        3px -3px 0 rgba(0, 0, 0, 0.7),
+        -3px 3px 0 rgba(0, 0, 0, 0.7),
+        3px 3px 0 rgba(0, 0, 0, 0.7);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 2005;
+    white-space: nowrap;
+}
+
+/* Pantalla completa */
+.fullscreen-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 
+        -3px -3px 0 rgba(0, 0, 0, 0.7),
+        3px -3px 0 rgba(0, 0, 0, 0.7),
+        -3px 3px 0 rgba(0, 0, 0, 0.7),
+        3px 3px 0 rgba(0, 0, 0, 0.7);
+    opacity: 0.7;
+    z-index: 9999;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Deshabilitar selección y arrastre */
+.protected-photo-container,
+.protected-video-container,
+.photo-carousel-modal,
+.photo-preview,
+.video-player,
+.carousel-image {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Modo de foto completa para tarjetas de perfil */
+.profile-image.protected-photo-container.full-image-mode {
+    position: relative;
+    height: 300px; /* Altura fija para consistencia */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-color: #f8f9fa;
+}
+
+.profile-image.protected-photo-container.full-image-mode .card-img-top.photo-preview {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain; /* Esto asegura que la imagen se muestre completa */
+}
+
+/* Posicionar la insignia de verificación */
+.profile-image.protected-photo-container .verified-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 20;
+    pointer-events: none;
+}
+
+/* Ajuste de la marca de agua para este tipo de tarjeta */
+.profile-image.protected-photo-container.full-image-mode .photo-watermark {
+    font-size: 18px; /* Tamaño moderado */
+    opacity: 0.7;
+}

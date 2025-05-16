@@ -57,11 +57,17 @@
                                 </div>
                             <?php else: ?>
                                 <?php foreach ($photos as $photo): ?>
-                                    <div class="col-md-4 col-sm-6 photo-item" data-id="<?= $photo['id'] ?>">
+                                    <div class="col-md-3 photo-item" data-id="<?= $photo['id'] ?>">
                                         <div class="card">
-                                            <div class="card-img-top photo-preview" style="background-image: url('<?= url('uploads/photos/' . $photo['filename']) ?>')"></div>
+                                            <div class="protected-photo-container">
+                                                <img src="<?= APP_URL ?>/uploads/photos/<?= $photo['filename'] ?>"
+                                                    class="photo-preview" alt="Foto"
+                                                    data-photo-id="<?= $photo['id'] ?>"
+                                                    loading="lazy" draggable="false">
+                                                <!-- La marca de agua y capa de protección se añadirán automáticamente por JS -->
+                                            </div>
                                             <div class="card-body">
-                                                <div class="btn-group w-100">
+                                                <div class="d-flex justify-content-between">
                                                     <?php if (!$photo['is_primary']): ?>
                                                         <button type="button" class="btn btn-sm btn-info set-primary-btn" data-id="<?= $photo['id'] ?>">
                                                             <i class="fas fa-star"></i> Principal
@@ -121,14 +127,16 @@
                                 </div>
                             <?php else: ?>
                                 <?php foreach ($videos as $video): ?>
-                                    <div class="col-md-6 video-item" data-id="<?= $video['id'] ?>">
+                                    <div class="col-md-3 video-item" data-id="<?= $video['id'] ?>">
                                         <div class="card">
                                             <div class="card-body">
-                                                <video controls class="w-100 rounded">
-                                                    <source src="<?= url('uploads/videos/' . $video['filename']) ?>"
-                                                        type="<?= getMimeType(UPLOAD_DIR . 'videos/' . $video['filename']) ?>">
-                                                    Tu navegador no soporta la reproducción de videos.
-                                                </video>
+                                                <div class="protected-video-container">
+                                                    <video controls class="w-100 rounded video-player" id="video-<?= $video['id'] ?>">
+                                                        <source src="<?= APP_URL ?>/uploads/videos/<?= $video['filename'] ?>" type="video/mp4">
+                                                        Tu navegador no soporta la reproducción de videos.
+                                                    </video>
+                                                    <!-- La marca de agua y capa de protección se añadirán automáticamente por JS -->
+                                                </div>
                                                 <div class="mt-2">
                                                     <button type="button" class="btn btn-sm btn-danger delete-video-btn" data-id="<?= $video['id'] ?>">
                                                         <i class="fas fa-trash"></i> Eliminar Video
@@ -166,25 +174,13 @@
     </div>
 </div>
 
-<!-- CSS adicional -->
-<style>
-    .photo-preview {
-        height: 200px;
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;
-    }
 
-    .photo-item,
-    .video-item {
-        margin-bottom: 20px;
-    }
-</style>
+
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM cargado correctamente');
-        
+
         // Referencias a elementos DOM
         const photoUploadBtn = document.getElementById('upload-photo-btn');
         const photoInput = document.getElementById('photo-input');
@@ -199,7 +195,7 @@
         const loadingModal = document.getElementById('loading-modal');
         const uploadProgress = document.getElementById('upload-progress');
         const loadingMessage = document.getElementById('loading-message');
-        
+
         // Verificar elementos
         console.log('Botón de subir foto:', photoUploadBtn ? 'encontrado' : 'NO encontrado');
         console.log('Input de foto:', photoInput ? 'encontrado' : 'NO encontrado');
@@ -266,31 +262,48 @@
             console.log('URL completa:', fullUrl);
 
             fetch(fullUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                console.log('Respuesta recibida:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Datos recibidos:', data);
-                clearInterval(progressInterval);
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    console.log('Respuesta recibida:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Datos recibidos:', data);
+                    clearInterval(progressInterval);
 
-                if (data.success) {
-                    // Completar barra de progreso
-                    uploadProgress.style.width = '100%';
-                    loadingMessage.textContent = `${fileType === 'photo' ? 'Foto' : 'Video'} subido correctamente`;
+                    if (data.success) {
+                        // Completar barra de progreso
+                        uploadProgress.style.width = '100%';
+                        loadingMessage.textContent = `${fileType === 'photo' ? 'Foto' : 'Video'} subido correctamente`;
 
-                    // Cerrar modal después de un breve retraso
-                    setTimeout(() => {
-                        modal.hide();
-                        // Recargar página para ver los cambios (solución temporal)
-                        window.location.reload();
-                    }, 1000);
-                } else {
+                        // Cerrar modal después de un breve retraso
+                        setTimeout(() => {
+                            modal.hide();
+                            // Recargar página para ver los cambios (solución temporal)
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        // Mostrar error
+                        loadingMessage.textContent = data.error || `Error al subir ${fileType === 'photo' ? 'foto' : 'video'}`;
+                        uploadProgress.classList.remove('bg-primary');
+                        uploadProgress.classList.add('bg-danger');
+
+                        // Cerrar modal después de un breve retraso
+                        setTimeout(() => {
+                            modal.hide();
+                            uploadProgress.classList.remove('bg-danger');
+                            uploadProgress.classList.add('bg-primary');
+                        }, 2000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error en la subida:', error);
+                    clearInterval(progressInterval);
+
                     // Mostrar error
-                    loadingMessage.textContent = data.error || `Error al subir ${fileType === 'photo' ? 'foto' : 'video'}`;
+                    loadingMessage.textContent = `Error de conexión: ${error.message}`;
                     uploadProgress.classList.remove('bg-primary');
                     uploadProgress.classList.add('bg-danger');
 
@@ -300,24 +313,7 @@
                         uploadProgress.classList.remove('bg-danger');
                         uploadProgress.classList.add('bg-primary');
                     }, 2000);
-                }
-            })
-            .catch(error => {
-                console.error('Error en la subida:', error);
-                clearInterval(progressInterval);
-
-                // Mostrar error
-                loadingMessage.textContent = `Error de conexión: ${error.message}`;
-                uploadProgress.classList.remove('bg-primary');
-                uploadProgress.classList.add('bg-danger');
-
-                // Cerrar modal después de un breve retraso
-                setTimeout(() => {
-                    modal.hide();
-                    uploadProgress.classList.remove('bg-danger');
-                    uploadProgress.classList.add('bg-primary');
-                }, 2000);
-            });
+                });
         }
 
         // Función para añadir eventos a los botones de fotos
@@ -332,20 +328,20 @@
                     formData.append('media_id', mediaId);
 
                     fetch('<?= url('/usuario/set-primary-photo') ?>', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            alert(data.error || 'Error al establecer como principal');
-                        }
-                    })
-                    .catch(error => {
-                        alert('Error de conexión');
-                    });
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                window.location.reload();
+                            } else {
+                                alert(data.error || 'Error al establecer como principal');
+                            }
+                        })
+                        .catch(error => {
+                            alert('Error de conexión');
+                        });
                 });
             });
 
@@ -360,20 +356,20 @@
                         formData.append('media_id', mediaId);
 
                         fetch('<?= url('/usuario/eliminar-media') ?>', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                window.location.reload();
-                            } else {
-                                alert(data.error || 'Error al eliminar foto');
-                            }
-                        })
-                        .catch(error => {
-                            alert('Error de conexión');
-                        });
+                                method: 'POST',
+                                body: formData
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    window.location.reload();
+                                } else {
+                                    alert(data.error || 'Error al eliminar foto');
+                                }
+                            })
+                            .catch(error => {
+                                alert('Error de conexión');
+                            });
                     }
                 });
             });
@@ -392,20 +388,20 @@
                         formData.append('media_id', mediaId);
 
                         fetch('<?= url('/usuario/eliminar-media') ?>', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                window.location.reload();
-                            } else {
-                                alert(data.error || 'Error al eliminar video');
-                            }
-                        })
-                        .catch(error => {
-                            alert('Error de conexión');
-                        });
+                                method: 'POST',
+                                body: formData
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    window.location.reload();
+                                } else {
+                                    alert(data.error || 'Error al eliminar video');
+                                }
+                            })
+                            .catch(error => {
+                                alert('Error de conexión');
+                            });
                     }
                 });
             });
@@ -414,7 +410,7 @@
         // Inicializar eventos
         addPhotoButtonEvents();
         addVideoButtonEvents();
-        
+
         // Log final
         console.log('Script cargado completamente');
     });

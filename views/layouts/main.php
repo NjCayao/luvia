@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="<?= url('plugins/adminlte/css/adminlte.min.css') ?>">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?= url('css/style.css') ?>">
+
+    <link rel="stylesheet" href="<?= url('css/media-protection.css') ?>">
     
     <?php if (isset($extraCss)): ?>
         <?= $extraCss ?>
@@ -66,7 +68,7 @@
                             <?php endif; ?>
                             
                             <?php if ($_SESSION['user_type'] === 'advertiser'): ?>
-                                <a href="<?= url('/usuario/perfil') ?>" class="dropdown-item">
+                                <a href="<?= url('/usuario/dashboard') ?>" class="dropdown-item">
                                     <i class="fas fa-id-card mr-2"></i> Mi Perfil
                                 </a>
                                 <a href="<?= url('/usuario/medios') ?>" class="dropdown-item">
@@ -74,9 +76,9 @@
                                 </a>
                             <?php endif; ?>
                             
-                            <a href="<?= url('/usuario/dashboard') ?>" class="dropdown-item">
+                            <!-- <a href="<?= url('/usuario/dashboard') ?>" class="dropdown-item">
                                 <i class="fas fa-user mr-2"></i> Mi Cuenta
-                            </a>
+                            </a> -->
                             
                             <div class="dropdown-divider"></div>
                             
@@ -153,9 +155,19 @@
 <!-- AdminLTE App -->
 <script src="<?= url('plugins/adminlte/js/adminlte.min.js') ?>"></script>
 
+<script src="<?= url('js/media-protection.js') ?>"></script>
+
 <?php if (isset($extraJs)): ?>
     <?= $extraJs ?>
 <?php endif; ?>
+
+<script>
+    // Configuración personalizada para la marca de agua
+    window.luviaMediaConfig = {
+        watermarkText: 'Luvia.com',
+        watermarkOpacity: 0.8
+    };
+</script>
 
 </body>
 </html>

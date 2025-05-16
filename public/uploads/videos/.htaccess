@@ -1,0 +1,21 @@
+# Denegar listado de directorio
+Options -Indexes
+
+# Requerir referencia de tu propio sitio
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?tudominio\.com [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://localhost [NC]
+    RewriteRule \.(mp4|webm)$ - [F]
+</IfModule>
+
+# Permitir solo tipos de archivo específicos
+<FilesMatch "\.(?i:mp4|webm)$">
+    Allow from all
+</FilesMatch>
+
+# Denegar todos los demás tipos
+<FilesMatch "^(?!.*\.(mp4|webm)$)">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

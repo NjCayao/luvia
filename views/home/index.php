@@ -77,21 +77,21 @@
             </div>
         <?php else: ?>
             <?php foreach ($featuredProfiles as $profile): ?>
-                <div class="col-md-3 col-sm-6 mb-3">
+                <div class="col-md-2 col-sm-6 mb-3">
                     <div class="card profile-card h-100 shadow-sm">
-                        <div class="profile-image" style="height: 140px; overflow: hidden;">
+                        <div class="protected-photo-container" style="height: 220px;">
                             <?php if (!empty($profile['main_photo'])): ?>
                                 <img src="<?= url('uploads/photos/' . $profile['main_photo']) ?>"
-                                    class="card-img-top" alt="<?= htmlspecialchars($profile['name']) ?>"
-                                    style="object-fit: cover; height: 100%; width: 100%;">
+                                    class="photo-preview" alt="<?= htmlspecialchars($profile['name']) ?>"
+                                    loading="lazy" draggable="false">
                             <?php else: ?>
                                 <img src="<?= url('img/profile-placeholder.jpg') ?>"
-                                    class="card-img-top" alt="Sin foto"
-                                    style="object-fit: cover; height: 100%; width: 100%;">
+                                    class="photo-preview" alt="Sin foto"
+                                    loading="lazy" draggable="false">
                             <?php endif; ?>
 
                             <?php if ($profile['is_verified']): ?>
-                                <span class="badge badge-success verified-badge" style="position: absolute; right: 10px; font-size: 10px;">
+                                <span class="badge badge-success verified-badge" style="position: absolute; z-index: 15; right: 10px; font-size: 10px;">
                                     <i class="fas fa-check-circle"></i> Verificado
                                 </span>
                             <?php endif; ?>
@@ -102,9 +102,6 @@
                             <p class="card-text mb-1" style="font-size: 0.8rem;">
                                 <i class="fas fa-map-marker-alt text-danger"></i>
                                 <?= htmlspecialchars($profile['city']) ?>
-                            </p>
-                            <p class="card-text description" style="font-size: 0.75rem; height: 40px; overflow: hidden;">
-                                <?= htmlspecialchars(substr($profile['description'], 0, 60)) ?>...
                             </p>
                         </div>
 
@@ -138,18 +135,21 @@
             <?php foreach ($newProfiles as $profile): ?>
                 <div class="col-md-3 col-sm-6 mb-4">
                     <div class="card profile-card h-100">
-                        <div class="profile-image">
+                        <!-- Solo cambiamos esta clase para aplicar la protección -->
+                        <div class="profile-image protected-photo-container">
                             <?php if (!empty($profile['main_photo'])): ?>
                                 <img src="<?= url('uploads/photos/' . $profile['main_photo']) ?>"
-                                    class="card-img-top" alt="<?= htmlspecialchars($profile['name']) ?>">
+                                    class="card-img-top photo-preview" alt="<?= htmlspecialchars($profile['name']) ?>">
                             <?php else: ?>
                                 <img src="<?= url('img/profile-placeholder.jpg') ?>"
-                                    class="card-img-top" alt="Sin foto">
+                                    class="card-img-top photo-preview" alt="Sin foto">
                             <?php endif; ?>
 
                             <span class="badge badge-info new-badge">
                                 <i class="fas fa-star"></i> Nuevo
                             </span>
+
+                            <!-- La marca de agua se añadirá automáticamente por JavaScript -->
                         </div>
 
                         <div class="card-body">
