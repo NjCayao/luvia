@@ -96,5 +96,5 @@ Contraseña: password
 
 Iniciar sesión como visitante:
 
-Email: cliente@example.com
+Email: cliente@gmail.com
 Contraseña: password

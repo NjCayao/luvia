@@ -106,8 +106,10 @@ class HomeController
         $pageHeader = $genderNames[$gender];
 
         // Renderizar vista
+        // Definir la ruta al archivo de vista específico
+        $viewFile = __DIR__ . '/../views/home/category.php';
+        // Renderizar vista principal (que incluirá el contenido específico)    
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/home/category.php';
     }
 
     /**
@@ -186,9 +188,12 @@ class HomeController
         <li class="breadcrumb-item active">' . htmlspecialchars($profile['name']) . '</li>
         ';
 
-        // Renderizar vista
+        // Define la ruta al archivo de vista específica
+        $viewFile = __DIR__ . '/../views/home/view_profile.php';
+
+        // Renderizar vista - CAMBIAR ESTA PARTE
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/home/view_profile.php';
+        // NO INCLUIR LA VISTA ACÁ - ya lo hace main.php
     }
 
     /**
@@ -273,7 +278,7 @@ class HomeController
         $pageTitle = 'Acerca de Nosotros';
         $pageHeader = 'Acerca de Nosotros';
 
-        require_once __DIR__ . '/../views/layouts/main.php';
+        $viewFile = __DIR__ . '/../views/layouts/main.php';
         require_once __DIR__ . '/../views/home/about.php';
     }
 
@@ -285,8 +290,10 @@ class HomeController
         $pageTitle = 'Términos y Condiciones';
         $pageHeader = 'Términos y Condiciones';
 
+        // Define la ruta al archivo de vista específica
+        $viewFile = __DIR__ . '/../views/home/terms.php';
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/home/terms.php';
+        
     }
 
     /**

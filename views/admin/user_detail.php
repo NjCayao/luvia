@@ -61,21 +61,64 @@
                                     <i class="fas fa-edit"></i> Editar
                                 </a>
                                 <?php if ($user['user_type'] !== 'admin'): ?>
-                                    <form action="<?= url('/admin/usuario/cambiar-estado') ?>" method="POST" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
-                                        <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                                        <input type="hidden" name="status" value="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>">
-                                        <input type="hidden" name="redirect_url" value="<?= url('/admin/usuario/' . $user['id']) ?>">
-                                        <button type="submit" class="btn <?= $user['status'] === 'active' ? 'btn-warning' : 'btn-success' ?>">
-                                            <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
-                                            <?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?>
-                                        </button>
-                                    </form>
+                                    <button type="button" id="toggleStatusBtn" class="btn <?= $user['status'] === 'active' ? 'btn-warning' : 'btn-success' ?>">
+                                        <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
+                                        <?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?>
+                                    </button>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Modal de confirmación para cambiar estado -->
+                <?php if ($user['user_type'] !== 'admin'): ?>
+                    <div class="modal fade" id="toggleStatusModal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title"><?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?> Usuario</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <?php if ($user['status'] === 'active'): ?>
+                                        <p>¿Estás seguro de que deseas suspender este usuario?</p>
+                                        <p>El usuario no podrá acceder a la plataforma mientras esté suspendido.</p>
+                                    <?php else: ?>
+                                        <p>¿Estás seguro de que deseas activar este usuario?</p>
+                                        <p>El usuario podrá acceder normalmente a la plataforma.</p>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                                    <form action="<?= url('/toggle_user_status.php') ?>" method="POST">
+                                        <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+                                        <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
+                                        <input type="hidden" name="status" value="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>">
+                                        <input type="hidden" name="redirect_url" value="<?= url('/admin/usuario/' . $user['id']) ?>">
+                                        <button type="submit" class="btn <?= $user['status'] === 'active' ? 'btn-warning' : 'btn-success' ?>">
+                                            <?= $user['status'] === 'active' ? 'Confirmar Suspensión' : 'Confirmar Activación' ?>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Botón para cambiar estado
+                            const toggleBtn = document.getElementById('toggleStatusBtn');
+                            if (toggleBtn) {
+                                toggleBtn.addEventListener('click', function() {
+                                    $('#toggleStatusModal').modal('show');
+                                });
+                            }
+                        });
+                    </script>
+                <?php endif; ?>
 
                 <div class="col-md-8">
                     <?php if ($profile): ?>

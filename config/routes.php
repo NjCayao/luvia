@@ -152,6 +152,19 @@ $routes = [
         'auth' => true,
         'method' => 'POST'
     ],
+
+    '/usuario/medios/fotos' => [
+        'controller' => 'ProfileController',
+        'action' => 'getPhotos',
+        'auth' => true,
+        'method' => 'GET'
+    ],
+    '/usuario/medios/videos' => [
+        'controller' => 'ProfileController',
+        'action' => 'getVideos',
+        'auth' => true,
+        'method' => 'GET'
+    ],
     '/usuario/set-primary-photo' => [
         'controller' => 'ProfileController',
         'action' => 'setPrimaryPhoto',
@@ -180,6 +193,12 @@ $routes = [
         'action' => 'saveRates',
         'auth' => true,
         'method' => 'POST'
+    ],
+    '/usuario/estadisticas' => [
+        'controller' => 'ProfileController',
+        'action' => 'showStats',
+        'auth' => true,
+        
     ],
 
     // Rutas de pago

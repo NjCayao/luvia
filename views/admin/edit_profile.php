@@ -17,20 +17,20 @@
                 <i class="fas fa-exclamation-circle"></i> Perfil no encontrado
             </div>
         <?php else: ?>
-            <form id="profile-form" method="POST" action="<?= url('/admin/perfil/actualizar') ?>">
-                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+            <form id="profile-form" method="POST" action="<?= url('/update_profile.php') ?>">
+                <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
                 <input type="hidden" name="profile_id" value="<?= $profile['id'] ?? 0 ?>">
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="name">Nombre *</label>
-                            <input type="text" class="form-control" id="name" name="name" 
-                                   value="<?= htmlspecialchars($profile['name'] ?? '') ?>" required>
+                            <input type="text" class="form-control" id="name" name="name"
+                                value="<?= htmlspecialchars($profile['name'] ?? '') ?>" required>
                             <div class="invalid-feedback" id="name-error"></div>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="gender">Género *</label>
@@ -49,17 +49,17 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="whatsapp">WhatsApp *</label>
-                            <input type="text" class="form-control" id="whatsapp" name="whatsapp" 
-                                   value="<?= htmlspecialchars($profile['whatsapp'] ?? '') ?>" required>
+                            <input type="text" class="form-control" id="whatsapp" name="whatsapp"
+                                value="<?= htmlspecialchars($profile['whatsapp'] ?? '') ?>" required>
                             <div class="invalid-feedback" id="whatsapp-error"></div>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="city">Ciudad *</label>
@@ -75,18 +75,18 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-md-12">
                         <div class="form-group">
                             <label for="location">Ubicación *</label>
-                            <input type="text" class="form-control" id="location" name="location" 
-                                   value="<?= htmlspecialchars($profile['location'] ?? '') ?>" required>
+                            <input type="text" class="form-control" id="location" name="location"
+                                value="<?= htmlspecialchars($profile['location'] ?? '') ?>" required>
                             <div class="invalid-feedback" id="location-error"></div>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-md-12">
                         <div class="form-group">
@@ -96,7 +96,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-md-12">
                         <div class="form-group">
@@ -106,13 +106,13 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-md-12">
                         <div class="form-group">
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input" id="is_verified" name="is_verified" value="1"
-                                       <?= (isset($profile['is_verified']) && $profile['is_verified']) ? 'checked' : '' ?>>
+                                    <?= (isset($profile['is_verified']) && $profile['is_verified']) ? 'checked' : '' ?>>
                                 <label class="custom-control-label" for="is_verified">Perfil Verificado</label>
                             </div>
                             <small class="form-text text-muted">
@@ -121,9 +121,9 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="alert alert-danger d-none" id="form-error"></div>
-                
+
                 <div class="row mt-4">
                     <div class="col-md-12">
                         <div class="btn-group">

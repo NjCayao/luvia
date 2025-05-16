@@ -8,7 +8,7 @@
             </h3>
         </div>
         <div class="card-body">
-            <form method="get" action="<?= url('/perfil/estadisticas') ?>" class="form-inline">
+            <form method="get" action="<?= url('/usuario/estadisticas') ?>" class="form-inline">
                 <div class="form-group mr-3">
                     <label for="period" class="mr-2">Mostrar estadísticas de:</label>
                     <select name="period" id="period" class="form-control" onchange="this.form.submit()">
@@ -28,7 +28,7 @@
                 <span class="info-box-icon bg-info"><i class="fas fa-eye"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Total de Vistas</span>
-                    <span class="info-box-number"><?= $stats['total_views'] ?></span>
+                    <span class="info-box-number"><?= number_format($stats['total_views']) ?></span>
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
                 <span class="info-box-icon bg-success"><i class="fab fa-whatsapp"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Total de Contactos</span>
-                    <span class="info-box-number"><?= $stats['total_clicks'] ?></span>
+                    <span class="info-box-number"><?= number_format($stats['total_clicks']) ?></span>
                 </div>
             </div>
         </div>
@@ -46,7 +46,7 @@
                 <span class="info-box-icon bg-warning"><i class="fas fa-percentage"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Tasa de Conversión</span>
-                    <span class="info-box-number"><?= $stats['total_conversion_rate'] ?>%</span>
+                    <span class="info-box-number"><?= $stats['total_views'] > 0 ? number_format($stats['total_conversion_rate'], 2) : '0.00' ?>%</span>
                 </div>
             </div>
         </div>
@@ -113,16 +113,22 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h6 class="mb-0">Vistas por día:</h6>
-                            <h2 class="mb-0 text-info"><?= $stats['avg_daily_views'] ?></h2>
+                            <h2 class="mb-0 text-info"><?= number_format($stats['avg_daily_views'], 2) ?></h2>
                         </div>
                         <div class="text-right">
                             <h6 class="mb-0">Promedio de tu categoría:</h6>
                             <h2 class="mb-0 <?= $stats['avg_daily_views'] > $stats['avg_category_views'] ? 'text-success' : 'text-danger' ?>">
                                 <?= number_format($stats['avg_category_views'], 2) ?>
-                                <?php if ($stats['avg_daily_views'] > $stats['avg_category_views']): ?>
-                                    <small class="text-success"><i class="fas fa-arrow-up"></i> +<?= round(($stats['avg_daily_views'] / $stats['avg_category_views'] - 1) * 100, 2) ?>%</small>
-                                <?php else: ?>
-                                    <small class="text-danger"><i class="fas fa-arrow-down"></i> <?= round(($stats['avg_daily_views'] / $stats['avg_category_views'] - 1) * 100, 2) ?>%</small>
+                                <?php if ($stats['avg_category_views'] > 0): ?>
+                                    <?php 
+                                    $viewsRatio = $stats['avg_daily_views'] / max(0.01, $stats['avg_category_views']);
+                                    $viewsPercentChange = round(($viewsRatio - 1) * 100, 2);
+                                    ?>
+                                    <?php if ($stats['avg_daily_views'] > $stats['avg_category_views']): ?>
+                                        <small class="text-success"><i class="fas fa-arrow-up"></i> +<?= $viewsPercentChange ?>%</small>
+                                    <?php else: ?>
+                                        <small class="text-danger"><i class="fas fa-arrow-down"></i> <?= $viewsPercentChange ?>%</small>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </h2>
                         </div>
@@ -133,16 +139,22 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="mb-0">Contactos por día:</h6>
-                            <h2 class="mb-0 text-success"><?= $stats['avg_daily_clicks'] ?></h2>
+                            <h2 class="mb-0 text-success"><?= number_format($stats['avg_daily_clicks'], 2) ?></h2>
                         </div>
                         <div class="text-right">
                             <h6 class="mb-0">Promedio de tu categoría:</h6>
                             <h2 class="mb-0 <?= $stats['avg_daily_clicks'] > $stats['avg_category_clicks'] ? 'text-success' : 'text-danger' ?>">
                                 <?= number_format($stats['avg_category_clicks'], 2) ?>
-                                <?php if ($stats['avg_daily_clicks'] > $stats['avg_category_clicks']): ?>
-                                    <small class="text-success"><i class="fas fa-arrow-up"></i> +<?= round(($stats['avg_daily_clicks'] / $stats['avg_category_clicks'] - 1) * 100, 2) ?>%</small>
-                                <?php else: ?>
-                                    <small class="text-danger"><i class="fas fa-arrow-down"></i> <?= round(($stats['avg_daily_clicks'] / $stats['avg_category_clicks'] - 1) * 100, 2) ?>%</small>
+                                <?php if ($stats['avg_category_clicks'] > 0): ?>
+                                    <?php 
+                                    $clicksRatio = $stats['avg_daily_clicks'] / max(0.01, $stats['avg_category_clicks']);
+                                    $clicksPercentChange = round(($clicksRatio - 1) * 100, 2);
+                                    ?>
+                                    <?php if ($stats['avg_daily_clicks'] > $stats['avg_category_clicks']): ?>
+                                        <small class="text-success"><i class="fas fa-arrow-up"></i> +<?= $clicksPercentChange ?>%</small>
+                                    <?php else: ?>
+                                        <small class="text-danger"><i class="fas fa-arrow-down"></i> <?= $clicksPercentChange ?>%</small>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </h2>
                         </div>
@@ -190,7 +202,7 @@
                             </tr>
                             <tr>
                                 <td>Vistas totales</td>
-                                <td><?= $stats['total_views'] ?></td>
+                                <td><?= number_format($stats['total_views']) ?></td>
                                 <td>
                                     <?php 
                                     $viewsComparison = $stats['avg_category_views'] * $stats['period_days'];
@@ -203,14 +215,14 @@
                                             <span class="text-danger"><?= $viewsPercentage - 100 ?>% por debajo del promedio</span>
                                         <?php endif; ?>
                                         <div class="progress progress-sm">
-                                            <div class="progress-bar <?= $viewsPercentage >= 100 ? 'bg-success' : 'bg-danger' ?>" style="width: <?= min(100, $viewsPercentage) ?>%"></div>
+                                            <div class="progress-bar <?= $viewsPercentage >= 100 ? 'bg-success' : 'bg-danger' ?>" style="width: <?= min(100, max(1, $viewsPercentage)) ?>%"></div>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Contactos totales</td>
-                                <td><?= $stats['total_clicks'] ?></td>
+                                <td><?= number_format($stats['total_clicks']) ?></td>
                                 <td>
                                     <?php 
                                     $clicksComparison = $stats['avg_category_clicks'] * $stats['period_days'];
@@ -223,20 +235,20 @@
                                             <span class="text-danger"><?= $clicksPercentage - 100 ?>% por debajo del promedio</span>
                                         <?php endif; ?>
                                         <div class="progress progress-sm">
-                                            <div class="progress-bar <?= $clicksPercentage >= 100 ? 'bg-success' : 'bg-danger' ?>" style="width: <?= min(100, $clicksPercentage) ?>%"></div>
+                                            <div class="progress-bar <?= $clicksPercentage >= 100 ? 'bg-success' : 'bg-danger' ?>" style="width: <?= min(100, max(1, $clicksPercentage)) ?>%"></div>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Tasa de conversión</td>
-                                <td><?= $stats['total_conversion_rate'] ?>%</td>
+                                <td><?= number_format($stats['total_conversion_rate'], 2) ?>%</td>
                                 <td>
                                     <?php 
-                                    $conversionComparison = $stats['avg_category_clicks'] > 0 && $stats['avg_category_views'] > 0 ? 
-                                                           ($stats['avg_category_clicks'] / $stats['avg_category_views']) * 100 : 0;
+                                    $conversionComparison = ($stats['avg_category_clicks'] > 0 && $stats['avg_category_views'] > 0) ? 
+                                                        ($stats['avg_category_clicks'] / $stats['avg_category_views']) * 100 : 0.01;
                                     $conversionPercentage = $conversionComparison > 0 ? 
-                                                           round(($stats['total_conversion_rate'] / $conversionComparison) * 100, 2) : 0;
+                                                        round(($stats['total_conversion_rate'] / $conversionComparison) * 100, 2) : 0;
                                     ?>
                                     <div class="progress-group">
                                         <?php if ($conversionPercentage >= 100): ?>
@@ -245,7 +257,7 @@
                                             <span class="text-danger"><?= $conversionPercentage - 100 ?>% por debajo del promedio</span>
                                         <?php endif; ?>
                                         <div class="progress progress-sm">
-                                            <div class="progress-bar <?= $conversionPercentage >= 100 ? 'bg-success' : 'bg-danger' ?>" style="width: <?= min(100, $conversionPercentage) ?>%"></div>
+                                            <div class="progress-bar <?= $conversionPercentage >= 100 ? 'bg-success' : 'bg-danger' ?>" style="width: <?= min(100, max(1, $conversionPercentage)) ?>%"></div>
                                         </div>
                                     </div>
                                 </td>
@@ -259,7 +271,7 @@
                                             Mejor que el <?= $stats['percentile'] ?>% de perfiles
                                         </span>
                                         <div class="progress progress-sm">
-                                            <div class="progress-bar <?= $stats['percentile'] >= 50 ? 'bg-success' : 'bg-danger' ?>" style="width: <?= $stats['percentile'] ?>%"></div>
+                                            <div class="progress-bar <?= $stats['percentile'] >= 50 ? 'bg-success' : 'bg-danger' ?>" style="width: <?= max(1, $stats['percentile']) ?>%"></div>
                                         </div>
                                     </div>
                                 </td>
@@ -278,9 +290,14 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <div class="callout <?= $stats['total_views'] < $stats['avg_category_views'] * $stats['period_days'] ? 'callout-warning' : 'callout-success' ?>">
+                    <?php
+                    // Calcular este valor una vez para usarlo en varias condiciones
+                    $viewsComparisonTotal = $stats['avg_category_views'] * $stats['period_days'];
+                    $viewsBelowAverage = $viewsComparisonTotal > 0 && $stats['total_views'] < $viewsComparisonTotal;
+                    ?>
+                    <div class="callout <?= $viewsBelowAverage ? 'callout-warning' : 'callout-success' ?>">
                         <h5><i class="fas fa-eye mr-1"></i> Visibilidad</h5>
-                        <?php if ($stats['total_views'] < $stats['avg_category_views'] * $stats['period_days']): ?>
+                        <?php if ($viewsBelowAverage): ?>
                             <p>Tu perfil recibe menos visitas que el promedio. Considera:</p>
                             <ul>
                                 <li>Mejorar tus fotos principales para captar más atención</li>
@@ -296,9 +313,17 @@
                         <?php endif; ?>
                     </div>
                     
-                    <div class="callout <?= $stats['total_conversion_rate'] < $conversionComparison ? 'callout-warning' : 'callout-success' ?>">
+                    <?php 
+                    // Asegurar que conversionComparison esté definido
+                    if (!isset($conversionComparison)) {
+                        $conversionComparison = ($stats['avg_category_clicks'] > 0 && $stats['avg_category_views'] > 0) ? 
+                                            ($stats['avg_category_clicks'] / $stats['avg_category_views']) * 100 : 0.01;
+                    }
+                    $conversionBelowAverage = $conversionComparison > 0 && $stats['total_conversion_rate'] < $conversionComparison;
+                    ?>
+                    <div class="callout <?= $conversionBelowAverage ? 'callout-warning' : 'callout-success' ?>">
                         <h5><i class="fas fa-percentage mr-1"></i> Conversión</h5>
-                        <?php if ($stats['total_conversion_rate'] < $conversionComparison): ?>
+                        <?php if ($conversionBelowAverage): ?>
                             <p>Tu tasa de conversión está por debajo del promedio. Recomendaciones:</p>
                             <ul>
                                 <li>Asegúrate de que tu información de contacto sea clara y visible</li>
@@ -365,7 +390,7 @@
                             <div class="info-box bg-light">
                                 <div class="info-box-content">
                                     <h5>Comparativa</h5>
-                                    <p>Tus estadísticas se comparan con el promedio de perfiles en tu misma categoría (<?= $stats['profile']['gender'] === 'female' ? 'Mujeres' : ($stats['profile']['gender'] === 'male' ? 'Hombres' : 'Trans') ?>).</p>
+                                    <p>Tus estadísticas se comparan con el promedio de perfiles en tu misma categoría (<?= isset($stats['profile']['gender']) ? ($stats['profile']['gender'] === 'female' ? 'Mujeres' : ($stats['profile']['gender'] === 'male' ? 'Hombres' : 'Trans')) : 'Tu categoría' ?>).</p>
                                 </div>
                             </div>
                         </div>
@@ -388,10 +413,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Datos para el gráfico de rendimiento
-    const performanceLabels = <?= json_encode(array_keys($stats['views_by_day'])) ?>;
-    const viewsData = <?= json_encode(array_values($stats['views_by_day'])) ?>;
-    const clicksData = <?= json_encode(array_values($stats['clicks_by_day'])) ?>;
-    const conversionData = <?= json_encode(array_values($stats['conversion_rate'])) ?>;
+    const performanceLabels = <?= json_encode(array_keys($stats['views_by_day'] ?? [])) ?>;
+    const viewsData = <?= json_encode(array_values($stats['views_by_day'] ?? [])) ?>;
+    const clicksData = <?= json_encode(array_values($stats['clicks_by_day'] ?? [])) ?>;
+    const conversionData = <?= json_encode(array_values($stats['conversion_rate'] ?? [])) ?>;
     
     // Configurar gráfico de rendimiento
     const performanceCtx = document.getElementById('performanceChart').getContext('2d');
@@ -495,7 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: ['Tu posición', 'Resto de perfiles'],
             datasets: [{
-                data: [<?= $stats['percentile'] ?>, <?= 100 - $stats['percentile'] ?>],
+                data: [<?= $stats['percentile'] ?? 0 ?>, <?= 100 - ($stats['percentile'] ?? 0) ?>],
                 backgroundColor: [
                     'rgba(60, 141, 188, 0.8)',
                     'rgba(210, 214, 222, 0.8)'
@@ -519,9 +544,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     callbacks: {
                         label: function(context) {
                             if (context.dataIndex === 0) {
-                                return 'Tu perfil está en el TOP ' + <?= $stats['percentile'] ?> + '%';
+                                return 'Tu perfil está en el TOP ' + <?= $stats['percentile'] ?? 0 ?> + '%';
                             } else {
-                                return 'Resto de perfiles: ' + (100 - <?= $stats['percentile'] ?>) + '%';
+                                return 'Resto de perfiles: ' + (100 - <?= $stats['percentile'] ?? 0 ?>) + '%';
                             }
                         }
                     }

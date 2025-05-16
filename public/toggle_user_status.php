@@ -1,6 +1,4 @@
 <?php
-// toggle_user_status.php - Coloca este archivo en la carpeta "public"
-
 // Incluir archivos necesarios
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../config/database.php';
@@ -8,7 +6,10 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 
 // Verificar si el usuario está logueado y es admin
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 if (!isLoggedIn() || $_SESSION['user_type'] !== 'admin') {
     setFlashMessage('danger', 'No autorizado');
     redirect('/admin');

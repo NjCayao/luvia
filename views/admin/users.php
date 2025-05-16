@@ -6,7 +6,7 @@
                 <h3 class="card-title">Filtros</h3>
             </div>
             <div class="card-body">
-                <form action="<?= url('/admin/toggle_user_status.php') ?>" method="POST" style="display: inline;">
+                <form action="<?= url('/admin/usuarios') ?>" method="GET" class="row">
                     <div class="col-md-3">
                         <div class="form-group">
                             <label for="type">Tipo de usuario</label>
@@ -104,15 +104,13 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <?php if ($user['user_type'] !== 'admin'): ?>
-                                        <form action="<?= url('/toggle_user_status.php') ?>" method="POST" style="display: inline;">
-                                            <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
-                                            <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                                            <input type="hidden" name="status" value="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>">
-                                            <button type="submit" class="btn btn-sm <?= $user['status'] === 'active' ? 'btn-warning' : 'btn-success' ?>"
-                                                title="<?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?>">
-                                                <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-sm <?= $user['status'] === 'active' ? 'btn-warning' : 'btn-success' ?> toggle-status-btn"
+                                            data-id="<?= $user['id'] ?>"
+                                            data-status="<?= $user['status'] === 'active' ? 'suspended' : 'active' ?>"
+                                            data-name="<?= htmlspecialchars($user['email']) ?>"
+                                            title="<?= $user['status'] === 'active' ? 'Suspender' : 'Activar' ?>">
+                                            <i class="fas <?= $user['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
+                                        </button>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -173,8 +171,8 @@
             </div>
             <div class="modal-body">
                 <p id="statusMessage">¿Estás seguro que deseas cambiar el estado de este usuario?</p>
-                <form id="statusForm" method="POST" action="<?= url('/admin/usuario/cambiar-estado') ?>">
-                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                <form id="statusForm" method="POST" action="<?= url('/toggle_user_status.php') ?>">
+                    <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
                     <input type="hidden" name="user_id" id="userId" value="">
                     <input type="hidden" name="status" id="userStatus" value="">
                 </form>
@@ -236,38 +234,33 @@
 </script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Manejar botones de cambio de estado
-        document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                const userId = this.getAttribute('data-id');
-                const newStatus = this.getAttribute('data-status');
-                const currentStatus = this.getAttribute('data-current');
-
-                document.getElementById('userId').value = userId;
-                document.getElementById('userStatus').value = newStatus;
-
-                let message = '';
-                if (newStatus === 'active') {
-                    message = '¿Estás seguro que deseas activar este usuario?';
-                } else if (newStatus === 'suspended') {
-                    message = '¿Estás seguro que deseas suspender este usuario? Esto bloqueará su acceso a la plataforma.';
-                }
-
-                document.getElementById('statusMessage').textContent = message;
-
-                $('#statusModal').modal('show');
-            });
-        });
-
-        // Confirmar cambio de estado
-        document.getElementById('confirmStatusChange').addEventListener('click', function() {
-            // Para debugging
-            console.log('Enviando formulario con datos:');
-            console.log('user_id:', document.getElementById('userId').value);
-            console.log('status:', document.getElementById('userStatus').value);
-
-            document.getElementById('statusForm').submit();
+document.addEventListener('DOMContentLoaded', function() {
+    // Manejar botones de cambio de estado
+    document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const userId = this.getAttribute('data-id');
+            const newStatus = this.getAttribute('data-status');
+            const userName = this.getAttribute('data-name');
+            
+            document.getElementById('userId').value = userId;
+            document.getElementById('userStatus').value = newStatus;
+            
+            let message = '';
+            if (newStatus === 'active') {
+                message = '¿Estás seguro que deseas activar el usuario ' + userName + '?';
+            } else if (newStatus === 'suspended') {
+                message = '¿Estás seguro que deseas suspender el usuario ' + userName + '? Esto bloqueará su acceso a la plataforma.';
+            }
+            
+            document.getElementById('statusMessage').textContent = message;
+            
+            $('#statusModal').modal('show');
         });
     });
+    
+    // Confirmar cambio de estado
+    document.getElementById('confirmStatusChange').addEventListener('click', function() {
+        document.getElementById('statusForm').submit();
+    });
+});
 </script>

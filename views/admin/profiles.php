@@ -23,7 +23,7 @@
                             <label for="city">Ciudad</label>
                             <select name="city" id="city" class="form-control">
                                 <option value="">Todas</option>
-                                <?php foreach($cities as $cityOption): ?>
+                                <?php foreach ($cities as $cityOption): ?>
                                     <option value="<?= $cityOption ?>" <?= $city === $cityOption ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($cityOption) ?>
                                     </option>
@@ -126,9 +126,10 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <?php if (!$profile['is_verified']): ?>
-                                        <button type="button" class="btn btn-sm btn-success verify-profile-btn" 
-                                                data-id="<?= $profile['id'] ?>" 
-                                                title="Verificar perfil">
+                                        <button type="button" class="btn btn-sm btn-success verify-profile-btn"
+                                            data-id="<?= $profile['id'] ?>"
+                                            data-name="<?= htmlspecialchars($profile['name']) ?>"
+                                            title="Verificar perfil">
                                             <i class="fas fa-check-circle"></i>
                                         </button>
                                     <?php endif; ?>
@@ -141,65 +142,66 @@
         </table>
     </div>
     <!-- /.card-body -->
-    
+
     <?php if ($totalPages > 1): ?>
-    <div class="card-footer clearfix">
-        <ul class="pagination pagination-sm m-0 float-right">
-            <?php if ($page > 1): ?>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => 1]))) ?>">«</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => $page - 1]))) ?>">‹</a>
-                </li>
-            <?php endif; ?>
-            
-            <?php
-            $startPage = max(1, $page - 2);
-            $endPage = min($totalPages, $page + 2);
-            
-            for ($i = $startPage; $i <= $endPage; $i++):
-            ?>
-                <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                    <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => $i]))) ?>"><?= $i ?></a>
-                </li>
-            <?php endfor; ?>
-            
-            <?php if ($page < $totalPages): ?>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => $page + 1]))) ?>">›</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => $totalPages]))) ?>">»</a>
-                </li>
-            <?php endif; ?>
-        </ul>
-    </div>
+        <div class="card-footer clearfix">
+            <ul class="pagination pagination-sm m-0 float-right">
+                <?php if ($page > 1): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => 1]))) ?>">«</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => $page - 1]))) ?>">‹</a>
+                    </li>
+                <?php endif; ?>
+
+                <?php
+                $startPage = max(1, $page - 2);
+                $endPage = min($totalPages, $page + 2);
+
+                for ($i = $startPage; $i <= $endPage; $i++):
+                ?>
+                    <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                        <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => $i]))) ?>"><?= $i ?></a>
+                    </li>
+                <?php endfor; ?>
+
+                <?php if ($page < $totalPages): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => $page + 1]))) ?>">›</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/perfiles?' . http_build_query(array_merge($_GET, ['page' => $totalPages]))) ?>">»</a>
+                    </li>
+                <?php endif; ?>
+            </ul>
+        </div>
     <?php endif; ?>
 </div>
 <!-- /.card -->
 
 <!-- Modal para verificar perfil -->
-<div class="modal fade" id="verifyModal" tabindex="-1" role="dialog" aria-labelledby="verifyModalLabel" aria-hidden="true">
+<div class="modal fade" id="verifyProfileModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="verifyModalLabel">Verificar Perfil</h5>
+                <h5 class="modal-title">Verificar Perfil</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p>¿Estás seguro que deseas verificar este perfil?</p>
+                <p>¿Estás seguro de que deseas verificar el perfil de <span id="profileName"></span>?</p>
                 <p>Al verificarlo, se mostrará como "Verificado" en la plataforma y aparecerá el símbolo de verificación junto a su nombre.</p>
-                <form id="verifyForm" method="POST" action="<?= url('/admin/perfil/verificar') ?>">
+                <form id="verifyProfileForm" method="POST" action="<?= url('/verify_profile.php') ?>">
                     <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
-                    <input type="hidden" name="profile_id" id="profileId" value="">
+                    <input type="hidden" name="profile_id" id="profileIdToVerify" value="">
+                    <input type="hidden" name="redirect_url" value="<?= url('/admin/perfiles') ?>">
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-success" id="confirmVerify">Verificar Perfil</button>
+                <button type="button" class="btn btn-success" id="confirmVerifyProfile">Verificar</button>
             </div>
         </div>
     </div>
@@ -211,29 +213,38 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.verify-profile-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const profileId = this.getAttribute('data-id');
-            document.getElementById('profileId').value = profileId;
-            $('#verifyModal').modal('show');
+            const profileName = this.getAttribute('data-name');
+            
+            document.getElementById('profileIdToVerify').value = profileId;
+            document.getElementById('profileName').textContent = profileName;
+            
+            $('#verifyProfileModal').modal('show');
         });
     });
     
     // Confirmar verificación
-    document.getElementById('confirmVerify').addEventListener('click', function() {
-        document.getElementById('verifyForm').submit();
-    });
+    const confirmVerifyBtn = document.getElementById('confirmVerifyProfile');
+    if (confirmVerifyBtn) {
+        confirmVerifyBtn.addEventListener('click', function() {
+            document.getElementById('verifyProfileForm').submit();
+        });
+    }
 });
 </script>
 
 <style>
-.badge-pink {
-    background-color: #f27eb5;
-    color: white;
-}
-.badge-blue {
-    background-color: #3490dc;
-    color: white;
-}
-.badge-purple {
-    background-color: #8e44ad;
-    color: white;
-}
+    .badge-pink {
+        background-color: #f27eb5;
+        color: white;
+    }
+
+    .badge-blue {
+        background-color: #3490dc;
+        color: white;
+    }
+
+    .badge-purple {
+        background-color: #8e44ad;
+        color: white;
+    }
 </style>

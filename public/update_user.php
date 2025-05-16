@@ -1,6 +1,4 @@
 <?php
-// update_user.php - Coloca este archivo en la carpeta "public"
-
 // Incluir archivos necesarios
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../config/database.php';
@@ -11,11 +9,16 @@ require_once __DIR__ . '/../includes/auth.php';
 header('Content-Type: application/json');
 
 // Verificar si el usuario está logueado y es admin
-session_start();
+// Solo iniciar sesión si no hay una sesión activa
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 if (!isLoggedIn() || $_SESSION['user_type'] !== 'admin') {
     echo json_encode(['error' => 'No autorizado']);
     exit;
 }
+
 
 // Verificar token CSRF
 if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {

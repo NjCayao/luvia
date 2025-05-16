@@ -97,6 +97,54 @@
                     </div>
                 </div>
 
+                <!-- Si la suscripción tiene renovación automática activada, mostrar botón para cancelar -->
+                <?php if ($subscription['auto_renew']): ?>
+                    <button type="button" id="cancelRenewBtn" class="btn btn-warning btn-block mt-3">
+                        <i class="fas fa-ban"></i> Cancelar Renovación Automática
+                    </button>
+                <?php endif; ?>
+
+                <!-- Modal de confirmación para cancelar renovación -->
+                <?php if ($subscription['auto_renew']): ?>
+                    <div class="modal fade" id="cancelRenewModal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Cancelar Renovación Automática</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>¿Estás seguro de que deseas cancelar la renovación automática de esta suscripción?</p>
+                                    <p>La suscripción seguirá activa hasta la fecha de finalización, pero no se renovará automáticamente.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                                    <form action="<?= url('/cancel_subscription.php') ?>" method="POST">
+                                        <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
+                                        <input type="hidden" name="subscription_id" value="<?= $subscription['id'] ?>">
+                                        <input type="hidden" name="redirect_url" value="<?= url('/admin/suscripcion/' . $subscription['id']) ?>">
+                                        <button type="submit" class="btn btn-warning">Confirmar Cancelación</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Botón para cancelar renovación
+                            const cancelBtn = document.getElementById('cancelRenewBtn');
+                            if (cancelBtn) {
+                                cancelBtn.addEventListener('click', function() {
+                                    $('#cancelRenewModal').modal('show');
+                                });
+                            }
+                        });
+                    </script>
+                <?php endif; ?>
+
                 <div class="col-md-6">
                     <!-- Información del usuario -->
                     <div class="card mb-4">
@@ -223,7 +271,7 @@
             </div>
             <div class="modal-body">
                 <p id="subscriptionStatusMessage">¿Estás seguro que deseas cambiar el estado de esta suscripción?</p>
-                <form id="subscriptionStatusForm" method="POST" action="<?= url('/admin/suscripcion/cambiar-estado') ?>" style="display: none;">
+                <form id="subscriptionStatusForm" method="POST" action="<?= url('/toggle_subscription_status.php') ?>">
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="subscription_id" id="subscriptionId" value="<?= $subscription['id'] ?>">
                     <input type="hidden" name="status" id="subscriptionStatus" value="">

@@ -167,9 +167,12 @@
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary" id="submit-btn">
                         <i class="fas fa-save"></i> Guardar Tarifas
-                    </button>
-                    <a href="<?= url('/usuario/dashboard') ?>" class="btn btn-default float-right">
+                    </button>                   
+                    <a href="<?= url('/usuario/dashboard') ?>" class="btn btn-success">
                         Cancelar
+                    </a>
+                    <a href="<?= url('/usuario/dashboard') ?>" class="btn btn-primary float-right">
+                        Ir a Mi Cuenta
                     </a>
                 </div>
             </form>

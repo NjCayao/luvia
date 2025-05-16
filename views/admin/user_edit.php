@@ -102,91 +102,99 @@
 </div>
 
 <script>
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('edit-user-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const formError = document.getElementById('form-error');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-        // Resetear mensajes de error
-        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
-        formError.classList.add('d-none');
-        formError.textContent = '';
+            // Resetear mensajes de error
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+            formError.classList.add('d-none');
+            formError.textContent = '';
 
-        // Cambiar estado del botón
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            // Cambiar estado del botón
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
-        // Capturar datos del formulario
-        const formData = new FormData(form);
-        console.log('Enviando formulario con datos:');
-        for (let [key, value] of formData.entries()) {
-            console.log(key + ': ' + value);
-        }
+            // Capturar datos del formulario
+            const formData = new FormData(form);
+            console.log('Enviando formulario con datos:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key + ': ' + value);
+            }
 
-        // Enviar formulario con fetch
-        fetch(form.action, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                console.log('Respuesta recibida con estado:', response.status);
-                return response.text().then(text => {
-                    try {
-                        // Intentar parsear como JSON
-                        return JSON.parse(text);
-                    } catch (e) {
-                        // Si no es JSON, mostrar el texto y lanzar error
-                        console.error('Respuesta no es JSON válido:', text.substring(0, 500) + '...');
-                        throw new Error('Respuesta del servidor no es JSON válido');
-                    }
-                });
-            })
-            .then(data => {
-                console.log('Datos JSON procesados:', data);
-
-                if (data.errors) {
-                    // Mostrar errores de validación
-                    Object.keys(data.errors).forEach(field => {
-                        const input = document.getElementById(field);
-                        const error = document.getElementById(field + '-error');
-
-                        if (input && error) {
-                            input.classList.add('is-invalid');
-                            error.textContent = data.errors[field];
+            // Enviar formulario con fetch
+            fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    console.log('Respuesta recibida con estado:', response.status);
+                    return response.text().then(text => {
+                        try {
+                            // Intentar parsear como JSON
+                            return JSON.parse(text);
+                        } catch (e) {
+                            // Si no es JSON, mostrar el texto y lanzar error
+                            console.error('Respuesta no es JSON válido:', text.substring(0, 500) + '...');
+                            throw new Error('Respuesta del servidor no es JSON válido');
                         }
                     });
-                } else if (data.error) {
-                    // Mostrar error general
+                })
+                .then(data => {
+                    console.log('Datos JSON procesados:', data);
+
+                    if (data.errors) {
+                        // Mostrar errores de validación
+                        Object.keys(data.errors).forEach(field => {
+                            const input = document.getElementById(field);
+                            const error = document.getElementById(field + '-error');
+
+                            if (input && error) {
+                                input.classList.add('is-invalid');
+                                error.textContent = data.errors[field];
+                            }
+                        });
+                    } else if (data.error) {
+                        // Mostrar error general
+                        formError.classList.remove('d-none');
+                        formError.textContent = data.error;
+                    } else if (data.success) {
+                        // Mostrar mensaje de éxito
+                        formError.classList.remove('d-none');
+                        formError.classList.remove('alert-danger');
+                        formError.classList.add('alert-success');
+                        formError.textContent = data.message || 'Usuario actualizado correctamente';
+
+                        // Redireccionar después de un breve retraso
+                        setTimeout(function() {
+                            if (data.redirect) {
+                                window.location.href = data.redirect;
+                            }
+                        }, 1500);
+                    }
+
+                    // Restaurar botón
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+
+                    // Mostrar error de conexión
                     formError.classList.remove('d-none');
-                    formError.textContent = data.error;
-                } else if (data.success) {
-                    // Mostrar mensaje de éxito
-                    formError.classList.remove('d-none');
-                    formError.classList.remove('alert-danger');
-                    formError.classList.add('alert-success');
-                    formError.textContent = data.message || 'Usuario actualizado correctamente';
+                    formError.textContent = 'Error de conexión o respuesta inválida. Intente nuevamente.';
 
-                    // Redireccionar después de un breve retraso
-                    setTimeout(function() {
-                        if (data.redirect) {
-                            window.location.href = data.redirect;
-                        }
-                    }, 1500);
-                }
-
-                // Restaurar botón
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-
-                // Mostrar error de conexión
-                formError.classList.remove('d-none');
-                formError.textContent = 'Error de conexión o respuesta inválida. Intente nuevamente.';
-
-                // Restaurar botón
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
-            });
-    });
+                    // Restaurar botón
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
+                });
+        });
+    }
+});
 </script>

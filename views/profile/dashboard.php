@@ -1,4 +1,21 @@
-<!-- Contenido principal -->
+<style>
+/* Aseguramos que el contenido principal tenga una altura mínima */
+.content-wrapper {
+    min-height: 100vh; /* 100% de la altura de la ventana */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hacemos que el contenido principal ocupe todo el espacio disponible */
+.content {
+    flex: 1;
+}
+
+/* Aseguramos que el footer quede al final */
+.main-footer {
+    margin-top: auto;
+}
+</style>
 <div class="row">
     <div class="col-md-4">
         <!-- Tarjeta de perfil -->
@@ -248,3 +265,4 @@
         </div>
     </div>
 </div>
+

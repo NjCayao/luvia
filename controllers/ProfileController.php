@@ -54,8 +54,8 @@ class ProfileController
         $pageHeader = 'Panel de Control';
 
         // Renderizar vista
+        $viewFile = __DIR__ . '/../views/profile/dashboard.php';
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/profile/dashboard.php';
     }
 
     /**
@@ -89,9 +89,12 @@ class ProfileController
         $pageTitle = $profile ? 'Editar Perfil' : 'Crear Perfil';
         $pageHeader = $pageTitle;
 
-        // Renderizar vista
+        // Define la ruta al archivo de vista específica
+        $viewFile = __DIR__ . '/../views/profile/edit.php';
+
+        // Renderizar vista - CAMBIAR ESTA PARTE
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/profile/edit.php';
+        // NO INCLUIR LA VISTA ACÁ - ya lo hace main.php
     }
 
     /**
@@ -99,6 +102,10 @@ class ProfileController
      */
     public function processEdit()
     {
+
+        $countryCode = $_POST['country_code'] ?? '+51';
+        $whatsapp = $_POST['whatsapp'] ?? '';
+        $fullWhatsapp = $countryCode . $whatsapp;
         // Verificar que el usuario esté logueado
         if (!isLoggedIn()) {
             http_response_code(401);
@@ -284,30 +291,48 @@ class ProfileController
         $photos = Media::getPhotosByProfileId($profile['id']);
         $videos = Media::getVideosByProfileId($profile['id']);
 
-        // Obtener límites según suscripción
-        $maxPhotos = 2; // Límite por defecto
-        $maxVideos = 2; // Límite por defecto
+        // Establecer límites según período de prueba o plan
+        $maxPhotos = 1; // Límite por defecto para período de prueba
+        $maxVideos = 0; // Sin videos en período de prueba
 
-        // Verificar si tiene suscripción activa y ajustar límites
+        // Verificar si está en período de prueba
+        $user = User::getById($userId);
+        $registrationDate = new DateTime($user['created_at']);
+        $now = new DateTime();
+        $daysSinceRegistration = $now->diff($registrationDate)->days;
+        $hasTrial = $daysSinceRegistration < 15; // 15 días de período de prueba
+
+        // Verificar si tiene suscripción activa
         $subscription = Subscription::getActiveByUserId($userId);
 
         if ($subscription) {
             // Obtener plan
             $plan = Plan::getById($subscription['plan_id']);
-            $plan = $planModel->getById($subscription['plan_id']);
 
             if ($plan) {
-                $maxPhotos = $plan['max_photos'] ?? $maxPhotos;
-                $maxVideos = $plan['max_videos'] ?? $maxVideos;
+                // Asignar límites según el plan
+                if ($plan['name'] === 'Plan Básico') {
+                    $maxPhotos = 2;
+                    $maxVideos = 1;
+                } elseif ($plan['name'] === 'Plan Premium') {
+                    $maxPhotos = 5;
+                    $maxVideos = 2;
+                } else {
+                    // Para otros planes, usar valores del plan
+                    $maxPhotos = $plan['max_photos'] ?? $maxPhotos;
+                    $maxVideos = $plan['max_videos'] ?? $maxVideos;
+                }
             }
         }
 
         $pageTitle = 'Gestionar Fotos y Videos';
         $pageHeader = 'Mis Fotos y Videos';
 
+        // Define la ruta al archivo de vista específica
+        $viewFile = __DIR__ . '/../views/profile/media.php';
+
         // Renderizar vista
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/profile/media.php';
     }
 
     /**
@@ -357,25 +382,48 @@ class ProfileController
         // Verificar si no ha excedido el límite de fotos
         $photoCount = Media::countPhotos($profile['id']);
 
-        // Obtener límite según suscripción
-        $maxPhotos = 2; // Límite por defecto
+        // Obtener límite según suscripción o periodo de prueba
+        $maxPhotos = 1; // Límite por defecto para período de prueba
+        $planName = "Período de prueba";
 
-        // Verificar si tiene suscripción activa y ajustar límites
+        // Verificar si está en período de prueba
+        $user = User::getById($userId);
+        $registrationDate = new DateTime($user['created_at']);
+        $now = new DateTime();
+        $daysSinceRegistration = $now->diff($registrationDate)->days;
+        $hasTrial = $daysSinceRegistration < 15; // 15 días de período de prueba
+
+        // Verificar si tiene suscripción activa
         $subscription = Subscription::getActiveByUserId($userId);
 
         if ($subscription) {
             // Obtener plan
             $plan = Plan::getById($subscription['plan_id']);
-            $plan = $planModel->getById($subscription['plan_id']);
 
             if ($plan) {
-                $maxPhotos = $plan['max_photos'] ?? $maxPhotos;
+                // Asignar límites según el plan
+                if ($plan['name'] === 'Plan Básico') {
+                    $maxPhotos = 2;
+                    $planName = "Plan Básico";
+                } elseif ($plan['name'] === 'Plan Premium') {
+                    $maxPhotos = 5;
+                    $planName = "Plan Premium";
+                } else {
+                    // Para otros planes, usar el valor del plan
+                    $maxPhotos = $plan['max_photos'] ?? $maxPhotos;
+                    $planName = $plan['name'];
+                }
             }
+        } elseif (!$hasTrial) {
+            // Si no tiene suscripción activa y ya no está en período de prueba
+            http_response_code(400);
+            echo json_encode(['error' => 'No tiene una suscripción activa. Adquiera un plan para continuar.']);
+            exit;
         }
 
         if ($photoCount >= $maxPhotos) {
             http_response_code(400);
-            echo json_encode(['error' => "Ha alcanzado el límite de $maxPhotos fotos. Actualice su plan para subir más."]);
+            echo json_encode(['error' => "Ha alcanzado el límite de $maxPhotos fotos de su $planName. Actualice su plan para subir más."]);
             exit;
         }
 
@@ -387,11 +435,19 @@ class ProfileController
         }
 
         // Validar el archivo
-        $photoError = validateFile($_FILES['photo'], MAX_PHOTO_SIZE, ALLOWED_PHOTO_TYPES, 'La foto');
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        $maxSize = 5 * 1024 * 1024; // 5MB
 
-        if ($photoError) {
+        if ($_FILES['photo']['size'] > $maxSize) {
             http_response_code(422);
-            echo json_encode(['error' => $photoError]);
+            echo json_encode(['error' => 'La foto no debe exceder los 5MB']);
+            exit;
+        }
+
+        $fileType = mime_content_type($_FILES['photo']['tmp_name']);
+        if (!in_array($fileType, $allowedTypes)) {
+            http_response_code(422);
+            echo json_encode(['error' => 'Tipo de archivo no permitido. Use JPG, PNG o WEBP']);
             exit;
         }
 
@@ -401,7 +457,7 @@ class ProfileController
             $filename = uniqid('photo_') . '.' . $extension;
 
             // Directorio para fotos
-            $uploadPath = UPLOAD_DIR . 'photos/';
+            $uploadPath = __DIR__ . '/../public/uploads/photos/';
 
             // Crear directorio si no existe
             if (!file_exists($uploadPath)) {
@@ -489,10 +545,18 @@ class ProfileController
         // Verificar si no ha excedido el límite de videos
         $videoCount = Media::countVideos($profile['id']);
 
-        // Obtener límite según suscripción
-        $maxVideos = 2; // Límite por defecto
+        // Obtener límite según suscripción o periodo de prueba
+        $maxVideos = 0; // Por defecto, sin videos en período de prueba
+        $planName = "Período de prueba";
 
-        // Verificar si tiene suscripción activa y ajustar límites
+        // Verificar si está en período de prueba
+        $user = User::getById($userId);
+        $registrationDate = new DateTime($user['created_at']);
+        $now = new DateTime();
+        $daysSinceRegistration = $now->diff($registrationDate)->days;
+        $hasTrial = $daysSinceRegistration < 15; // 15 días de período de prueba
+
+        // Verificar si tiene suscripción activa
         $subscription = Subscription::getActiveByUserId($userId);
 
         if ($subscription) {
@@ -500,13 +564,34 @@ class ProfileController
             $plan = Plan::getById($subscription['plan_id']);
 
             if ($plan) {
-                $maxVideos = $plan['max_videos'] ?? $maxVideos;
+                // Asignar límites según el plan
+                if ($plan['name'] === 'Plan Básico') {
+                    $maxVideos = 1;
+                    $planName = "Plan Básico";
+                } elseif ($plan['name'] === 'Plan Premium') {
+                    $maxVideos = 2;
+                    $planName = "Plan Premium";
+                } else {
+                    // Para otros planes, usar el valor del plan
+                    $maxVideos = $plan['max_videos'] ?? $maxVideos;
+                    $planName = $plan['name'];
+                }
             }
+        } elseif (!$hasTrial) {
+            // Si no tiene suscripción activa y ya no está en período de prueba
+            http_response_code(400);
+            echo json_encode(['error' => 'No tiene una suscripción activa. Adquiera un plan para continuar.']);
+            exit;
+        } else {
+            // En periodo de prueba, no permite videos
+            http_response_code(400);
+            echo json_encode(['error' => 'El período de prueba no incluye videos. Adquiera un plan para subir videos.']);
+            exit;
         }
 
         if ($videoCount >= $maxVideos) {
             http_response_code(400);
-            echo json_encode(['error' => "Ha alcanzado el límite de $maxVideos videos. Actualice su plan para subir más."]);
+            echo json_encode(['error' => "Ha alcanzado el límite de $maxVideos videos de su $planName. Actualice su plan para subir más."]);
             exit;
         }
 
@@ -518,11 +603,19 @@ class ProfileController
         }
 
         // Validar el archivo
-        $videoError = validateFile($_FILES['video'], MAX_VIDEO_SIZE, ALLOWED_VIDEO_TYPES, 'El video');
+        $allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+        $maxSize = 100 * 1024 * 1024; // 100MB
 
-        if ($videoError) {
+        if ($_FILES['video']['size'] > $maxSize) {
             http_response_code(422);
-            echo json_encode(['error' => $videoError]);
+            echo json_encode(['error' => 'El video no debe exceder los 100MB']);
+            exit;
+        }
+
+        $fileType = mime_content_type($_FILES['video']['tmp_name']);
+        if (!in_array($fileType, $allowedTypes)) {
+            http_response_code(422);
+            echo json_encode(['error' => 'Tipo de archivo no permitido. Use MP4, WEBM o MOV']);
             exit;
         }
 
@@ -532,7 +625,7 @@ class ProfileController
             $filename = uniqid('video_') . '.' . $extension;
 
             // Directorio para videos
-            $uploadPath = UPLOAD_DIR . 'videos/';
+            $uploadPath = __DIR__ . '/../public/uploads/videos/';
 
             // Crear directorio si no existe
             if (!file_exists($uploadPath)) {
@@ -567,6 +660,145 @@ class ProfileController
             echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
         }
 
+        exit;
+    }
+
+
+    /**
+     * Obtiene la lista actual de fotos (para actualizar UI mediante AJAX)
+     */
+    public function getPhotos()
+    {
+        // Verificar que el usuario esté logueado
+        if (!isLoggedIn()) {
+            http_response_code(401);
+            echo json_encode(['error' => 'No autorizado']);
+            exit;
+        }
+
+        // Verificar que sea un anunciante
+        if ($_SESSION['user_type'] !== 'advertiser') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acceso denegado']);
+            exit;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $profile = Profile::getByUserId($userId);
+
+        if (!$profile) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Perfil no encontrado']);
+            exit;
+        }
+
+        // Obtener fotos
+        $photos = Media::getPhotosByProfileId($profile['id']);
+
+        // Establecer límites según período de prueba o plan
+        $maxPhotos = 1; // Límite por defecto para período de prueba
+
+        // Verificar si está en período de prueba
+        $user = User::getById($userId);
+        $registrationDate = new DateTime($user['created_at']);
+        $now = new DateTime();
+        $daysSinceRegistration = $now->diff($registrationDate)->days;
+        $hasTrial = $daysSinceRegistration < 15; // 15 días de período de prueba
+
+        // Verificar si tiene suscripción activa
+        $subscription = Subscription::getActiveByUserId($userId);
+
+        if ($subscription) {
+            // Obtener plan
+            $plan = Plan::getById($subscription['plan_id']);
+
+            if ($plan) {
+                // Asignar límites según el plan
+                if ($plan['name'] === 'Plan Básico') {
+                    $maxPhotos = 2;
+                } elseif ($plan['name'] === 'Plan Premium') {
+                    $maxPhotos = 5;
+                } else {
+                    // Para otros planes, usar valores del plan
+                    $maxPhotos = $plan['max_photos'] ?? $maxPhotos;
+                }
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'photos' => $photos,
+            'max_photos' => $maxPhotos
+        ]);
+        exit;
+    }
+
+    /**
+     * Obtiene la lista actual de videos (para actualizar UI mediante AJAX)
+     */
+    public function getVideos()
+    {
+        // Verificar que el usuario esté logueado
+        if (!isLoggedIn()) {
+            http_response_code(401);
+            echo json_encode(['error' => 'No autorizado']);
+            exit;
+        }
+
+        // Verificar que sea un anunciante
+        if ($_SESSION['user_type'] !== 'advertiser') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acceso denegado']);
+            exit;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $profile = Profile::getByUserId($userId);
+
+        if (!$profile) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Perfil no encontrado']);
+            exit;
+        }
+
+        // Obtener videos
+        $videos = Media::getVideosByProfileId($profile['id']);
+
+        // Establecer límites según período de prueba o plan
+        $maxVideos = 0; // Sin videos en período de prueba
+
+        // Verificar si está en período de prueba
+        $user = User::getById($userId);
+        $registrationDate = new DateTime($user['created_at']);
+        $now = new DateTime();
+        $daysSinceRegistration = $now->diff($registrationDate)->days;
+        $hasTrial = $daysSinceRegistration < 15; // 15 días de período de prueba
+
+        // Verificar si tiene suscripción activa
+        $subscription = Subscription::getActiveByUserId($userId);
+
+        if ($subscription) {
+            // Obtener plan
+            $plan = Plan::getById($subscription['plan_id']);
+
+            if ($plan) {
+                // Asignar límites según el plan
+                if ($plan['name'] === 'Plan Básico') {
+                    $maxVideos = 1;
+                } elseif ($plan['name'] === 'Plan Premium') {
+                    $maxVideos = 2;
+                } else {
+                    // Para otros planes, usar valores del plan
+                    $maxVideos = $plan['max_videos'] ?? $maxVideos;
+                }
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'videos' => $videos,
+            'max_videos' => $maxVideos
+        ]);
         exit;
     }
 
@@ -807,8 +1039,8 @@ class ProfileController
         $pageHeader = 'Mis Tarifas';
 
         // Renderizar vista
+        $viewFile = __DIR__ . '/../views/profile/rates.php';
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/profile/rates.php';
     }
 
     /**
@@ -896,5 +1128,276 @@ class ProfileController
         }
 
         exit;
+    }
+
+
+
+    /**
+     * Muestra las estadísticas del perfil del usuario
+     */
+    public function showStats()
+    {
+        // Verificar que el usuario esté logueado
+        if (!isLoggedIn()) {
+            setFlashMessage('warning', 'Debe iniciar sesión para acceder a esta página');
+            redirect('/login');
+            exit;
+        }
+
+        // Verificar que sea un anunciante
+        if ($_SESSION['user_type'] !== 'advertiser') {
+            setFlashMessage('warning', 'Esta sección es solo para anunciantes');
+            redirect('/usuario/dashboard');
+            exit;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $user = User::getById($userId);
+
+        // Obtener perfil
+        $profile = Profile::getByUserId($userId);
+
+        if (!$profile) {
+            setFlashMessage('warning', 'Primero debe crear su perfil');
+            redirect('/usuario/editar');
+            exit;
+        }
+
+        // Obtener datos para estadísticas
+        $stats = [
+            'profile' => $profile,
+            'period' => $_GET['period'] ?? 'month', // Período por defecto: month (también: week, year)
+            'total_views' => $profile['views'],
+            'total_clicks' => $profile['whatsapp_clicks'],
+            'total_conversion_rate' => $profile['views'] > 0 ?
+                round(($profile['whatsapp_clicks'] / $profile['views']) * 100, 2) : 0,
+            'avg_daily_views' => $this->calculateAvgDailyViews($profile['id'], $_GET['period'] ?? 'month'),
+            'avg_daily_clicks' => $this->calculateAvgDailyClicks($profile['id'], $_GET['period'] ?? 'month'),
+            'avg_category_views' => $this->getAvgCategoryViews($profile['gender']),
+            'avg_category_clicks' => $this->getAvgCategoryClicks($profile['gender']),
+            'ranking_position' => $this->getProfileRanking($profile['id'], $profile['gender']),
+            'total_in_category' => $this->getTotalProfilesInCategory($profile['gender']),
+            'views_by_day' => $this->getViewsByDay($profile['id'], $_GET['period'] ?? 'month'),
+            'clicks_by_day' => $this->getClicksByDay($profile['id'], $_GET['period'] ?? 'month'),
+            'conversion_rate' => $this->getConversionRateByDay($profile['id'], $_GET['period'] ?? 'month'),
+            'period_days' => $this->getPeriodDays($_GET['period'] ?? 'month')
+        ];
+
+        // Calcular percentil (porcentaje en ranking)
+        $stats['percentile'] = $stats['total_in_category'] > 0 ?
+            round((1 - ($stats['ranking_position'] / $stats['total_in_category'])) * 100, 2) : 0;
+
+        $pageTitle = 'Estadísticas de mi Perfil';
+        $pageHeader = 'Estadísticas Detalladas';
+
+        // Define la ruta al archivo de vista específica
+        $viewFile = __DIR__ . '/../views/profile/stats.php';
+
+        // Renderiza la vista
+        require_once __DIR__ . '/../views/layouts/main.php';
+    }
+
+    /**
+     * Calcula el promedio diario de vistas en un período
+     */
+    private function calculateAvgDailyViews($profileId, $period = 'month')
+    {
+        // Implementar lógica para calcular vistas promedio diarias
+        // Usando datos de la tabla analytics_views o similar
+
+        // Para una implementación básica, podemos dividir el total de vistas por el número de días
+        $profile = Profile::getById($profileId);
+        $days = $this->getPeriodDays($period);
+
+        // Si el perfil es nuevo, ajustar los días desde la creación
+        $profileCreationDate = new DateTime($profile['created_at']);
+        $now = new DateTime();
+        $daysSinceCreation = $now->diff($profileCreationDate)->days;
+        $daysSinceCreation = max(1, $daysSinceCreation); // Mínimo 1 día
+
+        $days = min($days, $daysSinceCreation);
+
+        return round($profile['views'] / $days, 2);
+    }
+
+    /**
+     * Calcula el promedio diario de clics en WhatsApp en un período
+     */
+    private function calculateAvgDailyClicks($profileId, $period = 'month')
+    {
+        // Similar a calculateAvgDailyViews pero para clics
+        $profile = Profile::getById($profileId);
+        $days = $this->getPeriodDays($period);
+
+        // Si el perfil es nuevo, ajustar los días desde la creación
+        $profileCreationDate = new DateTime($profile['created_at']);
+        $now = new DateTime();
+        $daysSinceCreation = $now->diff($profileCreationDate)->days;
+        $daysSinceCreation = max(1, $daysSinceCreation); // Mínimo 1 día
+
+        $days = min($days, $daysSinceCreation);
+
+        return round($profile['whatsapp_clicks'] / $days, 2);
+    }
+
+    /**
+     * Obtiene el promedio de vistas para perfiles de la misma categoría (género)
+     */
+    private function getAvgCategoryViews($gender)
+    {
+        try {
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("SELECT AVG(views) as avg_views FROM profiles WHERE gender = ?");
+            $stmt->execute([$gender]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return round($result['avg_views'], 2);
+        } catch (Exception $e) {
+            error_log("Error obteniendo promedio de vistas por categoría: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Obtiene el promedio de clics para perfiles de la misma categoría (género)
+     */
+    private function getAvgCategoryClicks($gender)
+    {
+        try {
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("SELECT AVG(whatsapp_clicks) as avg_clicks FROM profiles WHERE gender = ?");
+            $stmt->execute([$gender]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return round($result['avg_clicks'], 2);
+        } catch (Exception $e) {
+            error_log("Error obteniendo promedio de clics por categoría: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Obtiene la posición del perfil en el ranking por vistas
+     */
+    private function getProfileRanking($profileId, $gender)
+    {
+        try {
+            $conn = getDbConnection();
+
+            // Primero obtenemos las vistas del perfil
+            $stmt = $conn->prepare("SELECT views FROM profiles WHERE id = ?");
+            $stmt->execute([$profileId]);
+            $profileViews = $stmt->fetch(PDO::FETCH_ASSOC)['views'];
+
+            // Luego contamos cuántos perfiles tienen más vistas
+            $stmt = $conn->prepare("SELECT COUNT(*) as position FROM profiles WHERE gender = ? AND views > ?");
+            $stmt->execute([$gender, $profileViews]);
+            $position = $stmt->fetch(PDO::FETCH_ASSOC)['position'];
+
+            // La posición es el número de perfiles con más vistas + 1
+            return $position + 1;
+        } catch (Exception $e) {
+            error_log("Error obteniendo ranking: " . $e->getMessage());
+            return 1; // Por defecto, primero
+        }
+    }
+
+    /**
+     * Obtiene el total de perfiles en la misma categoría
+     */
+    private function getTotalProfilesInCategory($gender)
+    {
+        try {
+            $conn = getDbConnection();
+            $stmt = $conn->prepare("SELECT COUNT(*) as total FROM profiles WHERE gender = ?");
+            $stmt->execute([$gender]);
+            return $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        } catch (Exception $e) {
+            error_log("Error contando perfiles por categoría: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Obtiene las vistas por día en un período
+     */
+    private function getViewsByDay($profileId, $period = 'month')
+    {
+        // Idealmente, esta información vendría de una tabla de analíticas
+        // Como implementación básica, generamos datos de ejemplo
+        $days = $this->getPeriodDays($period);
+
+        $results = [];
+        $startDate = new DateTime();
+        $startDate->modify("-{$days} days");
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = clone $startDate;
+            $date->modify("+{$i} days");
+            $dateStr = $date->format('Y-m-d');
+
+            // Para esta demo, generamos valores aleatorios en un rango realista
+            // En producción, estos datos vendrían de una tabla de analytics
+            $results[$dateStr] = rand(0, 10);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Obtiene los clics por día en un período
+     */
+    private function getClicksByDay($profileId, $period = 'month')
+    {
+        // Similar a getViewsByDay pero para clics
+        $days = $this->getPeriodDays($period);
+
+        $results = [];
+        $startDate = new DateTime();
+        $startDate->modify("-{$days} days");
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = clone $startDate;
+            $date->modify("+{$i} days");
+            $dateStr = $date->format('Y-m-d');
+
+            // Valores aleatorios, pero menores que las vistas
+            $results[$dateStr] = rand(0, 5);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Calcula la tasa de conversión diaria (clics/vistas)
+     */
+    private function getConversionRateByDay($profileId, $period = 'month')
+    {
+        $viewsByDay = $this->getViewsByDay($profileId, $period);
+        $clicksByDay = $this->getClicksByDay($profileId, $period);
+
+        $conversionRate = [];
+
+        foreach ($viewsByDay as $date => $views) {
+            $clicks = $clicksByDay[$date] ?? 0;
+            $conversionRate[$date] = $views > 0 ? round(($clicks / $views) * 100, 2) : 0;
+        }
+
+        return $conversionRate;
+    }
+
+    /**
+     * Obtiene el número de días según el período
+     */
+    private function getPeriodDays($period)
+    {
+        switch ($period) {
+            case 'week':
+                return 7;
+            case 'month':
+                return 30;
+            case 'year':
+                return 365;
+            default:
+                return 30; // Por defecto, un mes
+        }
     }
 }

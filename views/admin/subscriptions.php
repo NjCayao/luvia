@@ -139,13 +139,9 @@
                             <td><?= htmlspecialchars($subscription['plan_name'] ?? 'Plan ' . $subscription['plan_id']) ?></td>
                             <td>
                                 <span class="badge 
-                                    <?= $subscription['status'] === 'active' ? 'badge-success' : 
-                                        ($subscription['status'] === 'trial' ? 'badge-info' : 
-                                        ($subscription['status'] === 'expired' ? 'badge-warning' : 'badge-secondary')) 
+                                    <?= $subscription['status'] === 'active' ? 'badge-success' : ($subscription['status'] === 'trial' ? 'badge-info' : ($subscription['status'] === 'expired' ? 'badge-warning' : 'badge-secondary'))
                                     ?>">
-                                    <?= $subscription['status'] === 'active' ? 'Activa' : 
-                                       ($subscription['status'] === 'trial' ? 'Prueba' : 
-                                       ($subscription['status'] === 'expired' ? 'Expirada' : 'Cancelada')) 
+                                    <?= $subscription['status'] === 'active' ? 'Activa' : ($subscription['status'] === 'trial' ? 'Prueba' : ($subscription['status'] === 'expired' ? 'Expirada' : 'Cancelada'))
                                     ?>
                                 </span>
                             </td>
@@ -163,10 +159,11 @@
                                     <a href="<?= url('/admin/suscripcion/' . $subscription['id']) ?>" class="btn btn-sm btn-info" title="Ver detalle">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <?php if ($subscription['status'] === 'active'): ?>
-                                        <button type="button" class="btn btn-sm btn-warning cancel-subscription-btn" 
-                                                data-id="<?= $subscription['id'] ?>" 
-                                                title="Cancelar suscripción">
+                                    <?php if ($subscription['auto_renew']): ?>
+                                        <button type="button" class="btn btn-sm btn-warning cancel-renewal-btn"
+                                            data-id="<?= $subscription['id'] ?>"
+                                            data-user="<?= htmlspecialchars($subscription['user_email'] ?? $subscription['user_phone'] ?? 'Usuario ' . $subscription['user_id']) ?>"
+                                            title="Cancelar renovación">
                                             <i class="fas fa-ban"></i>
                                         </button>
                                     <?php endif; ?>
@@ -179,65 +176,66 @@
         </table>
     </div>
     <!-- /.card-body -->
-    
+
     <?php if ($totalPages > 1): ?>
-    <div class="card-footer clearfix">
-        <ul class="pagination pagination-sm m-0 float-right">
-            <?php if ($page > 1): ?>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => 1]))) ?>">«</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => $page - 1]))) ?>">‹</a>
-                </li>
-            <?php endif; ?>
-            
-            <?php
-            $startPage = max(1, $page - 2);
-            $endPage = min($totalPages, $page + 2);
-            
-            for ($i = $startPage; $i <= $endPage; $i++):
-            ?>
-                <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                    <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => $i]))) ?>"><?= $i ?></a>
-                </li>
-            <?php endfor; ?>
-            
-            <?php if ($page < $totalPages): ?>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => $page + 1]))) ?>">›</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => $totalPages]))) ?>">»</a>
-                </li>
-            <?php endif; ?>
-        </ul>
-    </div>
+        <div class="card-footer clearfix">
+            <ul class="pagination pagination-sm m-0 float-right">
+                <?php if ($page > 1): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => 1]))) ?>">«</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => $page - 1]))) ?>">‹</a>
+                    </li>
+                <?php endif; ?>
+
+                <?php
+                $startPage = max(1, $page - 2);
+                $endPage = min($totalPages, $page + 2);
+
+                for ($i = $startPage; $i <= $endPage; $i++):
+                ?>
+                    <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                        <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => $i]))) ?>"><?= $i ?></a>
+                    </li>
+                <?php endfor; ?>
+
+                <?php if ($page < $totalPages): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => $page + 1]))) ?>">›</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= url('/admin/suscripciones?' . http_build_query(array_merge($_GET, ['page' => $totalPages]))) ?>">»</a>
+                    </li>
+                <?php endif; ?>
+            </ul>
+        </div>
     <?php endif; ?>
 </div>
 <!-- /.card -->
 
-<!-- Modal para cancelar suscripción -->
-<div class="modal fade" id="cancelSubscriptionModal" tabindex="-1" role="dialog" aria-labelledby="cancelSubscriptionModalLabel" aria-hidden="true">
+<!-- Modal para cancelar renovación -->
+<div class="modal fade" id="cancelRenewalModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="cancelSubscriptionModalLabel">Cancelar Suscripción</h5>
+                <h5 class="modal-title">Cancelar Renovación Automática</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p>¿Estás seguro que deseas cancelar esta suscripción?</p>
-                <p>La suscripción se mantendrá activa hasta la fecha de finalización, pero no se renovará automáticamente.</p>
-                <form id="cancelSubscriptionForm" method="POST" action="<?= url('/admin/suscripcion/cancelar') ?>">
+                <p>¿Estás seguro de que deseas cancelar la renovación automática para la suscripción de <span id="subscriptionUser"></span>?</p>
+                <p>La suscripción seguirá activa hasta la fecha de finalización, pero no se renovará automáticamente.</p>
+                <form id="cancelRenewalForm" method="POST" action="<?= url('/cancel_subscription.php') ?>">
                     <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
                     <input type="hidden" name="subscription_id" id="subscriptionId" value="">
+                    <input type="hidden" name="redirect_url" value="<?= url('/admin/suscripciones') ?>">
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-warning" id="confirmCancelSubscription">Confirmar Cancelación</button>
+                <button type="button" class="btn btn-warning" id="confirmCancelRenewal">Confirmar Cancelación</button>
             </div>
         </div>
     </div>
@@ -245,18 +243,25 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Manejar botones de cancelación de suscripción
-    document.querySelectorAll('.cancel-subscription-btn').forEach(function(btn) {
+    // Manejar botones de cancelación de renovación
+    document.querySelectorAll('.cancel-renewal-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const subscriptionId = this.getAttribute('data-id');
+            const userName = this.getAttribute('data-user');
+            
             document.getElementById('subscriptionId').value = subscriptionId;
-            $('#cancelSubscriptionModal').modal('show');
+            document.getElementById('subscriptionUser').textContent = userName;
+            
+            $('#cancelRenewalModal').modal('show');
         });
     });
     
     // Confirmar cancelación
-    document.getElementById('confirmCancelSubscription').addEventListener('click', function() {
-        document.getElementById('cancelSubscriptionForm').submit();
-    });
+    const confirmCancelBtn = document.getElementById('confirmCancelRenewal');
+    if (confirmCancelBtn) {
+        confirmCancelBtn.addEventListener('click', function() {
+            document.getElementById('cancelRenewalForm').submit();
+        });
+    }
 });
 </script>
