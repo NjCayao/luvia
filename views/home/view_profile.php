@@ -154,7 +154,6 @@
                                     <?php continue; // Mostrar solo la primera foto si no tiene acceso 
                                     ?>
                                 <?php endif; ?>
-
                                 <div class="col-md-3 col-6 mb-3">
                                     <!-- Aplicar protección con marca de agua a cada foto de la galería -->
                                     <div class="protected-photo-container gallery-container">

@@ -76,9 +76,9 @@
                                 </a>
                             <?php endif; ?>
                             
-                            <!-- <a href="<?= url('/usuario/dashboard') ?>" class="dropdown-item">
+                            <a href="<?= url('/usuario/dashboard') ?>" class="dropdown-item">
                                 <i class="fas fa-user mr-2"></i> Mi Cuenta
-                            </a> -->
+                            </a>
                             
                             <div class="dropdown-divider"></div>
                             

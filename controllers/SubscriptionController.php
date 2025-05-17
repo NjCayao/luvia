@@ -38,10 +38,13 @@ class SubscriptionController {
         
         $pageTitle = 'Planes y Suscripciones';
         $pageHeader = 'Selecciona tu Plan';
-        
-        // Renderizar vista
+
+        // Define la ruta al archivo de vista específica
+        $viewFile = __DIR__ . '/../views/subscription/plans.php';
+
+        // Renderiza la vista principal
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/subscription/plans.php';
+        
     }
     
     /**
