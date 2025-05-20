@@ -57,12 +57,12 @@ function seedPlans() {
         [
             'name' => 'Acceso Básico',
             'user_type' => 'visitor',
-            'duration' => 15,
+            'duration' => 5,
             'price' => 5.00,
             'max_photos' => null,
             'max_videos' => null,
             'featured' => false,
-            'description' => "Acceso básico por 15 días\nIdeal para probar el servicio"
+            'description' => "Acceso básico por 5 días\nIdeal para probar el servicio"
         ],
         [
             'name' => 'Acceso Mensual',

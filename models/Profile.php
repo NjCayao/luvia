@@ -325,15 +325,58 @@ class Profile
     }
 
     /**
-     * Obtiene las ciudades disponibles
+     * Obtiene las provincias disponibles
      */
-    public static function getAvailableCities()
+    public static function getAvailableProvinces()
     {
         $conn = getDbConnection();
-        $stmt = $conn->prepare("SELECT DISTINCT city FROM profiles ORDER BY city");
+        $stmt = $conn->prepare("SELECT * FROM provinces ORDER BY name");
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        return $stmt->fetchAll();
     }
+
+    /**
+     * Obtiene los distritos disponibles para una provincia
+     */
+    public static function getDistrictsByProvinceId($provinceId)
+    {
+        $conn = getDbConnection();
+        $stmt = $conn->prepare("SELECT * FROM districts WHERE province_id = ? ORDER BY name");
+        $stmt->execute([$provinceId]);
+        return $stmt->fetchAll();
+    }
+    /**
+     * Obtiene el nombre de una provincia por su ID
+     */
+    public static function getProvinceNameById($provinceId)
+    {
+        if (empty($provinceId)) {
+            return '';
+        }
+
+        $conn = getDbConnection();
+        $stmt = $conn->prepare("SELECT name FROM provinces WHERE id = ?");
+        $stmt->execute([$provinceId]);
+        $result = $stmt->fetch();
+        return $result ? $result['name'] : '';
+    }
+
+    /**
+     * Obtiene el nombre de un distrito por su ID
+     */
+    public static function getDistrictNameById($districtId)
+    {
+        if (empty($districtId)) {
+            return '';
+        }
+
+        $conn = getDbConnection();
+        $stmt = $conn->prepare("SELECT name FROM districts WHERE id = ?");
+        $stmt->execute([$districtId]);
+        $result = $stmt->fetch();
+        return $result ? $result['name'] : '';
+    }
+
 
     /**
      * Cuenta perfiles por género
@@ -386,9 +429,26 @@ class Profile
     /**
      * Busca perfiles por términos
      */
-    public static function search($query, $city = '', $gender = '', $limit = 20, $offset = 0)
+    public static function search($query = '', $provinceId = null, $districtId = null, $gender = null, $limit = 20, $offset = 0)
     {
         $conn = getDbConnection();
+
+        $sql = "SELECT p.*, u.id as user_id, u.status as user_status, 
+            m.filename as main_photo,
+            prov.name as province_name,
+            dist.name as district_name
+            FROM profiles p
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN provinces prov ON p.province_id = prov.id
+            LEFT JOIN districts dist ON p.district_id = dist.id
+            LEFT JOIN (
+                SELECT profile_id, filename 
+                FROM media 
+                WHERE media_type = 'photo' AND is_primary = TRUE
+                LIMIT 1
+            ) m ON m.profile_id = p.id
+            LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
+            WHERE (u.status = 'active' OR s.id IS NOT NULL)";
 
         $params = [];
         $conditions = [];
@@ -400,15 +460,19 @@ class Profile
             $params[] = "%$query%";
         }
 
-        // Condición para ciudad
-        if (!empty($city)) {
-            $conditions[] = "p.city = ?";
-            $params[] = $city;
+        if (!empty($provinceId)) {
+            $sql .= " AND p.province_id = ?";
+            $params[] = $provinceId;
+        }
+
+        if (!empty($districtId)) {
+            $sql .= " AND p.district_id = ?";
+            $params[] = $districtId;
         }
 
         // Condición para género
         if (!empty($gender)) {
-            $conditions[] = "p.gender = ?";
+            $sql .= " AND p.gender = ?";
             $params[] = $gender;
         }
 
@@ -422,20 +486,55 @@ class Profile
         $params[] = $limit;
         $params[] = $offset;
 
+        $sql .= " ORDER BY p.is_verified DESC, s.id IS NOT NULL DESC, p.id DESC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Busca perfiles por provincia y distrito
+     */
+    public static function searchByLocation($province, $district = null, $gender = null, $limit = 20, $offset = 0)
+    {
+        $conn = getDbConnection();
+
+        $params = [$province];
+        $whereConditions = ['p.province = ?'];
+
+        if ($district !== null && !empty($district)) {
+            $whereConditions[] = 'p.district = ?';
+            $params[] = $district;
+        }
+
+        if ($gender !== null) {
+            $whereConditions[] = 'p.gender = ?';
+            $params[] = $gender;
+        }
+
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $whereClause = implode(' AND ', $whereConditions);
+
         $sql = "SELECT p.*, u.id as user_id, u.status as user_status, 
-                m.filename as main_photo 
-                FROM profiles p
-                JOIN users u ON p.user_id = u.id
-                LEFT JOIN (
-                    SELECT profile_id, filename 
-                    FROM media 
-                    WHERE media_type = 'photo' AND is_primary = TRUE
-                    LIMIT 1
-                ) m ON m.profile_id = p.id
-                LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
-                WHERE (u.status = 'active' OR s.id IS NOT NULL) $where
-                ORDER BY p.is_verified DESC, s.id IS NOT NULL DESC, p.id DESC
-                LIMIT ? OFFSET ?";
+            m.filename as main_photo 
+            FROM profiles p
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN (
+                SELECT profile_id, filename 
+                FROM media 
+                WHERE media_type = 'photo' AND is_primary = TRUE
+                LIMIT 1
+            ) m ON m.profile_id = p.id
+            LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
+            WHERE $whereClause AND (u.status = 'active' OR s.id IS NOT NULL)
+            ORDER BY is_verified DESC, s.id IS NOT NULL DESC, p.id DESC
+            LIMIT ? OFFSET ?";
 
         $stmt = $conn->prepare($sql);
         $stmt->execute($params);

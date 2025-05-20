@@ -1,5 +1,5 @@
 <div class="register-container">
-    <h3 class="text-center mb-4"><?= $userType === 'advertiser' ? 'Registrarme como anunciante' : 'Registrarme como visitante' ?></h3>
+    <h3 class="text-center mb-4"><?= $userType === 'advertiser' ? 'Registrarme para Publicar' : 'Registrarme como visitante' ?></h3>
 
     <form id="register-form" action="<?= url('/registro/procesar') ?>" method="post">
         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">

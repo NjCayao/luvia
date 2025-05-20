@@ -87,7 +87,8 @@ class User
     public static function verifyPhone($userId)
     {
         $conn = getDbConnection();
-        $stmt = $conn->prepare("UPDATE users SET phone_verified = TRUE, status = CASE WHEN email_verified = TRUE THEN 'active' ELSE status END WHERE id = ?");
+        // Actualizar verificación de teléfono y estado de la cuenta a activo
+        $stmt = $conn->prepare("UPDATE users SET phone_verified = TRUE, status = 'active' WHERE id = ?");
         return $stmt->execute([$userId]);
     }
 

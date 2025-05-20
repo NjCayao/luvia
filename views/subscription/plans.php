@@ -1,3 +1,16 @@
+<?php if ($user['user_type'] === 'visitor' && !$subscription): ?>
+    <div class="alert alert-info">
+        <h5><i class="icon fas fa-info"></i> ¡Bienvenido a <?= APP_NAME ?>!</h5>
+        <p>💋 ¿Listo para algo más que solo mirar? <br>
+            Activa tu acceso por solo S/. 5 y descubre: <br>
+            🔓 Fotos privadas, videos exclusivos y contacto directo con las señoritas más deseadas.<br>
+            No te quedes con las ganas... <br>
+            💫 Encuentra a tu compañía ideal y disfruta una experiencia inolvidable.<br>
+            Tu próxima conexión te está esperando...
+        </p>
+    </div>
+<?php endif; ?>
+
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-12">
@@ -10,7 +23,7 @@
                         <div class="col-md-9">
                             <h5 class="mb-1">Ya tienes una suscripción activa</h5>
                             <p class="mb-0">
-                                Plan: <strong><?= htmlspecialchars($subscription['plan_name']) ?></strong> | 
+                                Plan: <strong><?= htmlspecialchars($subscription['plan_name']) ?></strong> |
                                 Válido hasta: <strong><?= formatDate($subscription['end_date']) ?></strong>
                                 <?php if ($subscription['auto_renew']): ?>
                                     | <span class="badge badge-success">Renovación automática activada</span>
@@ -25,7 +38,7 @@
                     </div>
                 </div>
             <?php endif; ?>
-            
+
             <?php if ($userType === 'advertiser' && isset($trialStatus) && $trialStatus['has_trial'] && !$trialStatus['trial_ended']): ?>
                 <div class="alert alert-success">
                     <div class="row align-items-center">
@@ -35,7 +48,7 @@
                         <div class="col-md-11">
                             <h5 class="mb-1">Estás disfrutando de tu período de prueba gratuito</h5>
                             <p class="mb-0">
-                                Te quedan <strong><?= $trialStatus['days_left'] ?> días</strong> de prueba. 
+                                Te quedan <strong><?= $trialStatus['days_left'] ?> días</strong> de prueba.
                                 Para seguir disfrutando de todos los beneficios, selecciona un plan antes de que finalice tu prueba.
                             </p>
                         </div>
@@ -44,7 +57,7 @@
             <?php endif; ?>
         </div>
     </div>
-    
+
     <div class="row mt-3 mb-5">
         <div class="col-md-12 text-center">
             <h2 class="mb-4"><?= $userType === 'advertiser' ? 'Planes para Anunciantes' : 'Planes para Visitantes' ?></h2>
@@ -57,7 +70,7 @@
             </p>
         </div>
     </div>
-    
+
     <div class="row">
         <?php if (empty($plans)): ?>
             <div class="col-md-12">
@@ -72,75 +85,75 @@
                         <?php if ($plan['featured']): ?>
                             <div class="ribbon">Popular</div>
                         <?php endif; ?>
-                        
+
                         <div class="card-header bg-<?= $plan['featured'] ? 'primary text-white' : 'light' ?>">
                             <h3 class="card-title mb-0 text-center"><?= htmlspecialchars($plan['name']) ?></h3>
                         </div>
-                        
+
                         <div class="card-body">
                             <div class="price-container text-center mb-4">
                                 <span class="price-currency">S/</span>
                                 <span class="price-amount"><?= number_format($plan['price'], 0) ?></span>
                                 <span class="price-period">/ <?= $plan['duration'] ?> días</span>
                             </div>
-                            
+
                             <ul class="feature-list">
                                 <?php if ($userType === 'advertiser'): ?>
                                     <li>
-                                        <i class="fas fa-check text-success"></i> 
+                                        <i class="fas fa-check text-success"></i>
                                         Hasta <?= $plan['max_photos'] ?> fotos
                                     </li>
                                     <li>
-                                        <i class="fas fa-check text-success"></i> 
+                                        <i class="fas fa-check text-success"></i>
                                         Hasta <?= $plan['max_videos'] ?> videos
                                     </li>
                                     <?php if ($plan['featured']): ?>
                                         <li>
-                                            <i class="fas fa-check text-success"></i> 
+                                            <i class="fas fa-check text-success"></i>
                                             Perfil destacado
                                         </li>
                                         <li>
-                                            <i class="fas fa-check text-success"></i> 
+                                            <i class="fas fa-check text-success"></i>
                                             Estadísticas detalladas
                                         </li>
                                     <?php endif; ?>
                                     <li>
-                                        <i class="fas fa-check text-success"></i> 
+                                        <i class="fas fa-check text-success"></i>
                                         Contacto directo por WhatsApp
                                     </li>
                                 <?php else: ?>
                                     <li>
-                                        <i class="fas fa-check text-success"></i> 
+                                        <i class="fas fa-check text-success"></i>
                                         Acceso a todos los perfiles
                                     </li>
                                     <li>
-                                        <i class="fas fa-check text-success"></i> 
+                                        <i class="fas fa-check text-success"></i>
                                         Ver fotos y videos completos
                                     </li>
                                     <li>
-                                        <i class="fas fa-check text-success"></i> 
+                                        <i class="fas fa-check text-success"></i>
                                         Contacto directo por WhatsApp
                                     </li>
                                     <?php if ($plan['featured']): ?>
                                         <li>
-                                            <i class="fas fa-check text-success"></i> 
+                                            <i class="fas fa-check text-success"></i>
                                             Acceso prioritario a nuevos perfiles
                                         </li>
                                     <?php endif; ?>
                                 <?php endif; ?>
                                 <li>
-                                    <i class="fas fa-check text-success"></i> 
+                                    <i class="fas fa-check text-success"></i>
                                     Soporte 24/7
                                 </li>
                             </ul>
-                            
+
                             <?php if (!empty($plan['description'])): ?>
                                 <p class="plan-description">
                                     <?= nl2br(htmlspecialchars($plan['description'])) ?>
                                 </p>
                             <?php endif; ?>
                         </div>
-                        
+
                         <div class="card-footer bg-white text-center">
                             <?php if ($subscription && $subscription['plan_id'] == $plan['id']): ?>
                                 <button class="btn btn-success btn-block" disabled>
@@ -157,7 +170,7 @@
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-    
+
     <div class="row mt-5">
         <div class="col-md-8 offset-md-2">
             <div class="card">
@@ -177,18 +190,18 @@
                             <div id="faqCollapse1" class="collapse show" data-parent="#faqAccordion">
                                 <div class="card-body">
                                     <?php if ($userType === 'advertiser'): ?>
-                                        La suscripción te permite mantener tu perfil activo y visible para todos los visitantes. 
-                                        Tienes un período de prueba gratuito de <?= FREE_TRIAL_DAYS ?> días, después del cual 
+                                        La suscripción te permite mantener tu perfil activo y visible para todos los visitantes.
+                                        Tienes un período de prueba gratuito de <?= FREE_TRIAL_DAYS ?> días, después del cual
                                         debes seleccionar un plan para continuar disfrutando de todos los beneficios.
                                     <?php else: ?>
-                                        La suscripción te da acceso completo a todos los perfiles, permitiéndote ver todas 
-                                        las fotos, videos y contactar directamente mediante WhatsApp. Sin una suscripción activa, 
+                                        La suscripción te da acceso completo a todos los perfiles, permitiéndote ver todas
+                                        las fotos, videos y contactar directamente mediante WhatsApp. Sin una suscripción activa,
                                         solo podrás ver información limitada.
                                     <?php endif; ?>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="card border-0">
                             <div class="card-header bg-white" id="faqHeading2">
                                 <h2 class="mb-0">
@@ -199,13 +212,13 @@
                             </div>
                             <div id="faqCollapse2" class="collapse" data-parent="#faqAccordion">
                                 <div class="card-body">
-                                    Sí, puedes cancelar la renovación automática de tu suscripción en cualquier momento 
-                                    desde la sección "Mis Suscripciones". Sin embargo, no ofrecemos reembolsos por el 
+                                    Sí, puedes cancelar la renovación automática de tu suscripción en cualquier momento
+                                    desde la sección "Mis Suscripciones". Sin embargo, no ofrecemos reembolsos por el
                                     período ya pagado. Tu suscripción seguirá activa hasta la fecha de finalización.
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="card border-0">
                             <div class="card-header bg-white" id="faqHeading3">
                                 <h2 class="mb-0">
@@ -216,13 +229,13 @@
                             </div>
                             <div id="faqCollapse3" class="collapse" data-parent="#faqAccordion">
                                 <div class="card-body">
-                                    Los pagos se procesan de forma segura a través de nuestra pasarela de pagos (Izipay). 
-                                    Aceptamos tarjetas de crédito/débito y Yape. Todos los datos son encriptados y nunca 
+                                    Los pagos se procesan de forma segura a través de nuestra pasarela de pagos (Izipay).
+                                    Aceptamos tarjetas de crédito/débito y Yape. Todos los datos son encriptados y nunca
                                     almacenamos la información completa de tu tarjeta en nuestros servidores.
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="card border-0">
                             <div class="card-header bg-white" id="faqHeading4">
                                 <h2 class="mb-0">
@@ -234,12 +247,12 @@
                             <div id="faqCollapse4" class="collapse" data-parent="#faqAccordion">
                                 <div class="card-body">
                                     <?php if ($userType === 'advertiser'): ?>
-                                        Cuando vence tu suscripción, tu perfil deja de ser visible para los visitantes. 
-                                        Todos tus datos y medios permanecen en nuestro sistema, por lo que al renovar 
+                                        Cuando vence tu suscripción, tu perfil deja de ser visible para los visitantes.
+                                        Todos tus datos y medios permanecen en nuestro sistema, por lo que al renovar
                                         tu suscripción tu perfil estará disponible de inmediato sin necesidad de volver a cargarlo.
                                     <?php else: ?>
-                                        Cuando vence tu suscripción, ya no podrás acceder a los detalles completos de los 
-                                        perfiles ni contactar directamente. Podrás seguir navegando en la plataforma, pero 
+                                        Cuando vence tu suscripción, ya no podrás acceder a los detalles completos de los
+                                        perfiles ni contactar directamente. Podrás seguir navegando en la plataforma, pero
                                         con acceso limitado hasta que renueves tu suscripción.
                                     <?php endif; ?>
                                 </div>
@@ -253,67 +266,67 @@
 </div>
 
 <style>
-.pricing-card {
-    transition: all 0.3s ease;
-    overflow: hidden;
-    position: relative;
-}
+    .pricing-card {
+        transition: all 0.3s ease;
+        overflow: hidden;
+        position: relative;
+    }
 
-.pricing-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-}
+    .pricing-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
 
-.price-container {
-    position: relative;
-}
+    .price-container {
+        position: relative;
+    }
 
-.price-currency {
-    position: relative;
-    top: -15px;
-    font-size: 20px;
-    font-weight: 500;
-}
+    .price-currency {
+        position: relative;
+        top: -15px;
+        font-size: 20px;
+        font-weight: 500;
+    }
 
-.price-amount {
-    font-size: 48px;
-    font-weight: 700;
-    line-height: 1;
-}
+    .price-amount {
+        font-size: 48px;
+        font-weight: 700;
+        line-height: 1;
+    }
 
-.price-period {
-    font-size: 16px;
-    color: #6c757d;
-}
+    .price-period {
+        font-size: 16px;
+        color: #6c757d;
+    }
 
-.feature-list {
-    list-style: none;
-    padding-left: 0;
-    margin-bottom: 30px;
-}
+    .feature-list {
+        list-style: none;
+        padding-left: 0;
+        margin-bottom: 30px;
+    }
 
-.feature-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid #f8f9fa;
-}
+    .feature-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
 
-.feature-list li:last-child {
-    border-bottom: none;
-}
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
 
-.ribbon {
-    position: absolute;
-    top: 20px;
-    right: -30px;
-    width: 120px;
-    height: 30px;
-    background-color: #28a745;
-    color: white;
-    font-size: 14px;
-    font-weight: bold;
-    text-align: center;
-    line-height: 30px;
-    transform: rotate(45deg);
-    z-index: 1;
-}
+    .ribbon {
+        position: absolute;
+        top: 20px;
+        right: -30px;
+        width: 120px;
+        height: 30px;
+        background-color: #28a745;
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        line-height: 30px;
+        transform: rotate(45deg);
+        z-index: 1;
+    }
 </style>

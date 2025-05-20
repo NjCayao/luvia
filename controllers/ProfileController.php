@@ -83,8 +83,36 @@ class ProfileController
         // Obtener perfil existente o crear uno nuevo
         $profile = Profile::getByUserId($userId);
 
-        // Obtener la lista de ciudades disponibles
-        $cities = Profile::getAvailableCities();
+        // Obtener todas las provincias
+        $provinces = Profile::getAvailableProvinces();
+
+        // Si hay perfil con provincia seleccionada, obtener distritos
+        $districts = [];
+        if ($profile && !empty($profile['province_id'])) {
+            $districts = Profile::getDistrictsByProvinceId($profile['province_id']);
+        }
+
+        // Adquirir datos adicionales del perfil si existe
+        if ($profile) {
+            // Si tienen provincias y distritos asignados, obtener sus nombres para mostrar
+            if (!empty($profile['province_id'])) {
+                $stmt = getDbConnection()->prepare("SELECT name FROM provinces WHERE id = ?");
+                $stmt->execute([$profile['province_id']]);
+                $province = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($province) {
+                    $profile['province_name'] = $province['name'];
+                }
+            }
+
+            if (!empty($profile['district_id'])) {
+                $stmt = getDbConnection()->prepare("SELECT name FROM districts WHERE id = ?");
+                $stmt->execute([$profile['district_id']]);
+                $district = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($district) {
+                    $profile['district_name'] = $district['name'];
+                }
+            }
+        }
 
         $pageTitle = $profile ? 'Editar Perfil' : 'Crear Perfil';
         $pageHeader = $pageTitle;
@@ -92,9 +120,8 @@ class ProfileController
         // Define la ruta al archivo de vista específica
         $viewFile = __DIR__ . '/../views/profile/edit.php';
 
-        // Renderizar vista - CAMBIAR ESTA PARTE
+        // Renderizar vista
         require_once __DIR__ . '/../views/layouts/main.php';
-        // NO INCLUIR LA VISTA ACÁ - ya lo hace main.php
     }
 
     /**
@@ -140,7 +167,8 @@ class ProfileController
         $name = $_POST['name'] ?? '';
         $description = $_POST['description'] ?? '';
         $whatsapp = $_POST['whatsapp'] ?? '';
-        $city = $_POST['city'] ?? '';
+        $provinceId = !empty($_POST['province_id']) ? intval($_POST['province_id']) : null;
+        $districtId = !empty($_POST['district_id']) ? intval($_POST['district_id']) : null;
         $location = $_POST['location'] ?? '';
         $schedule = $_POST['schedule'] ?? '';
 
@@ -166,12 +194,12 @@ class ProfileController
             }
         }
 
-        if (empty($city)) {
-            $errors['city'] = 'La ciudad es obligatoria';
+        if (empty($provinceId)) {
+            $errors['province_id'] = 'La provincia es obligatoria';
         }
 
-        if (empty($location)) {
-            $errors['location'] = 'La ubicación es obligatoria';
+        if (empty($districtId)) {
+            $errors['district_id'] = 'El distrito es obligatorio';
         }
 
         if (empty($schedule)) {
@@ -198,7 +226,8 @@ class ProfileController
                     'name' => $name,
                     'description' => $description,
                     'whatsapp' => $whatsapp,
-                    'city' => $city,
+                    'province_id' => $provinceId,
+                    'district_id' => $districtId,
                     'location' => $location,
                     'schedule' => $schedule
                 ]);
@@ -217,7 +246,8 @@ class ProfileController
                     'gender' => $gender,
                     'description' => $description,
                     'whatsapp' => $whatsapp,
-                    'city' => $city,
+                    'province_id' => $provinceId,
+                    'district_id' => $districtId,
                     'location' => $location,
                     'schedule' => $schedule,
                     'is_verified' => false

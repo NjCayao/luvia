@@ -147,6 +147,27 @@ class AuthController
             unset($_SESSION['redirect_after_login']);
         } else if ($user['user_type'] === 'admin') {
             $redirectUrl = '/admin';
+        } else if ($user['user_type'] === 'visitor') {
+            // Verificar si tiene suscripción activa
+            require_once __DIR__ . '/../models/Subscription.php';
+            $subscription = Subscription::getActiveByUserId($user['id']);
+
+            if (!$subscription) {
+                // Si no tiene suscripción, redirigir a planes
+                $redirectUrl = '/pago/planes';
+            } else {
+                // Si tiene suscripción, redirigir a la página principal con filtro de mujeres
+                $redirectUrl = '/categoria/female';
+            }
+        } else if ($user['user_type'] === 'advertiser') {
+            // Verificar si ya tiene perfil creado
+            require_once __DIR__ . '/../models/Profile.php';
+            $profile = Profile::getByUserId($user['id']);
+
+            if (!$profile) {
+                // Si no tiene perfil, redirigir a crear perfil
+                $redirectUrl = '/usuario/editar';
+            }
         }
 
         echo json_encode([
@@ -215,6 +236,7 @@ class AuthController
         $userType = $_POST['user_type'] ?? 'visitor';
         $gender = $_POST['gender'] ?? '';
         $terms = isset($_POST['terms']) ? (bool)$_POST['terms'] : false;
+
 
         // Limpiar teléfono (eliminar espacios y caracteres no numéricos)
         $phone = preg_replace('/\D/', '', $phone);
@@ -312,9 +334,16 @@ class AuthController
 
             // Enviar código por SMS
             if (SMS_VERIFICATION_ENABLED) {
-                // Construir número internacional para el SMS
-                $internationalPhone = '+' . $fullPhoneNumber;
-                $this->smsService->sendVerificationCode($internationalPhone, $verificationCode);
+                try {
+                    // Construir número internacional para el SMS
+                    $internationalPhone = '+' . $fullPhoneNumber;
+                    $this->smsService->sendVerificationCode($internationalPhone, $verificationCode);
+                } catch (Exception $e) {
+                    // Registrar el error pero continuar
+                    error_log("Error al enviar SMS: " . $e->getMessage());
+                    // Para desarrollo, mostrar el código en el error log para facilitar las pruebas
+                    error_log("CÓDIGO DE VERIFICACIÓN (para desarrollo): $verificationCode");
+                }
             }
 
             // Guardar ID en sesión para la verificación
@@ -417,26 +446,30 @@ class AuthController
         // Obtener usuario
         $user = User::getById($userId);
 
+        // Activar la cuenta directamente
+        User::update($userId, ['status' => 'active']);
+
         // Limpiar sesión de verificación
         unset($_SESSION['pending_verification_id']);
 
-        // Si el usuario ya está completamente verificado y activo, iniciar sesión
-        if ($user['status'] === 'active') {
-            loginUser($user);
+        // Iniciar sesión automáticamente
+        loginUser($user);
 
-            echo json_encode([
-                'success' => true,
-                'message' => 'Verificación exitosa',
-                'redirect' => url('/usuario/dashboard')
-            ]);
-        } else {
-            // Si aún necesita verificación de email u otro paso
-            echo json_encode([
-                'success' => true,
-                'message' => 'Verificación de teléfono exitosa. Complete los siguientes pasos.',
-                'redirect' => url('/login')
-            ]);
+        // Preparar redirección según tipo de usuario
+        $redirectUrl = '/usuario/dashboard';
+
+        // Para visitantes, redirigir a planes
+        if ($user['user_type'] === 'visitor') {
+            $redirectUrl = '/pago/planes';
+        } else if ($user['user_type'] === 'advertiser') {
+            $redirectUrl = '/usuario/editar'; // Para que creen su perfil
         }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Verificación exitosa',
+            'redirect' => url($redirectUrl)
+        ]);
 
         exit;
     }

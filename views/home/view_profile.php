@@ -32,7 +32,22 @@
                         <p>
                             <i class="fas fa-map-marker-alt text-danger"></i>
                             <strong>Ubicación:</strong>
-                            <?= htmlspecialchars($profile['city']) ?> - <?= htmlspecialchars($profile['location']) ?>
+                            <?php if (!empty($profile['province_id']) && !empty($profile['district_id'])): ?>
+                                <?= htmlspecialchars(Profile::getDistrictNameById($profile['district_id'])) ?>,
+                                <?= htmlspecialchars(Profile::getProvinceNameById($profile['province_id'])) ?>
+                                <?php if (!empty($profile['location'])): ?>
+                                    - <?= htmlspecialchars($profile['location']) ?>
+                                <?php endif; ?>
+                            <?php elseif (!empty($profile['city'])): ?>
+                                <?= htmlspecialchars($profile['city']) ?>
+                                <?php if (!empty($profile['location'])): ?>
+                                    - <?= htmlspecialchars($profile['location']) ?>
+                                <?php endif; ?>
+                            <?php elseif (!empty($profile['location'])): ?>
+                                <?= htmlspecialchars($profile['location']) ?>
+                            <?php else: ?>
+                                <span class="text-muted">No especificada</span>
+                            <?php endif; ?>
                         </p>
 
                         <?php if ($hasAccess || $isOwner): ?>
@@ -231,8 +246,18 @@
                 </div>
                 <div class="card-body">
                     <?php
-                    // Obtener perfiles similares (misma ciudad y género)
-                    $similarProfiles = Profile::searchByCity($profile['city'], $profile['gender'], 3);
+                    // Obtener perfiles similares (misma provincia y género)
+                    if (!empty($profile['province_id'])) {
+                        // Si hay provincia, buscar por provincia y género
+                        $similarProfiles = Profile::searchByLocation($profile['province_id'], $profile['district_id'], $profile['gender'], 3);
+                    } else if (!empty($profile['city'])) {
+                        // Compatibilidad con perfiles anteriores
+                        $similarProfiles = Profile::searchByCity($profile['city'], $profile['gender'], 3);
+                    } else {
+                        // Sin ubicación, buscar solo por género
+                        $similarProfiles = Profile::searchByGender($profile['gender'], 3);
+                    }
+
                     // Filtrar el perfil actual
                     $similarProfiles = array_filter($similarProfiles, function ($p) use ($profile) {
                         return $p['id'] != $profile['id'];
@@ -260,7 +285,14 @@
                                             <h5 class="card-title"><?= htmlspecialchars($similar['name']) ?></h5>
                                             <p class="card-text">
                                                 <i class="fas fa-map-marker-alt text-danger"></i>
-                                                <?= htmlspecialchars($similar['city']) ?>
+                                                <?php if (!empty($similar['province_id']) && !empty($similar['district_id'])): ?>
+                                                    <?= htmlspecialchars(Profile::getDistrictNameById($similar['district_id'])) ?>,
+                                                    <?= htmlspecialchars(Profile::getProvinceNameById($similar['province_id'])) ?>
+                                                <?php elseif (!empty($similar['city'])): ?>
+                                                    <?= htmlspecialchars($similar['city']) ?>
+                                                <?php else: ?>
+                                                    <span class="text-muted">No especificada</span>
+                                                <?php endif; ?>
                                             </p>
                                         </div>
                                         <div class="card-footer bg-white">
