@@ -179,26 +179,45 @@ class Subscription
             return false;
         }
 
-        // Crear período de prueba
+        // Fechas de inicio y fin
         $startDate = date('Y-m-d H:i:s');
-        $endDate = date('Y-m-d H:i:s', strtotime('+' . FREE_TRIAL_DAYS . ' days'));
 
-        // Usar el plan básico para establecer los límites
-        $basicPlan = Plan::getByDurationAndType(30, 'advertiser'); // Plan mensual básico
-        $planId = $basicPlan ? $basicPlan['id'] : null;
+        // Buscar específicamente el plan gratuito con ID 9 (14 días)
+        $planId = 9; // Plan Gratuito (14 días)
 
-        if (!$planId) {
-            // Si no hay plan básico, crear uno temporal (solo para el período de prueba)
-            $planId = Plan::create([
-                'name' => 'Prueba Gratuita',
-                'user_type' => 'advertiser',
-                'duration' => FREE_TRIAL_DAYS,
-                'price' => 0,
-                'max_photos' => 2,
-                'max_videos' => 2,
-                'featured' => false,
-                'description' => 'Período de prueba gratuito'
-            ]);
+        // Verificar que el plan exista
+        $stmt = $conn->prepare("SELECT * FROM plans WHERE id = ?");
+        $stmt->execute([$planId]);
+        $plan = $stmt->fetch();
+
+        if (!$plan) {
+            // Si no existe el plan gratuito, buscar algún plan gratuito alternativo
+            $stmt = $conn->prepare("SELECT * FROM plans WHERE price = 0 AND user_type = 'advertiser' LIMIT 1");
+            $stmt->execute();
+            $plan = $stmt->fetch();
+
+            if (!$plan) {
+                // Si no hay ningún plan gratuito, usar el valor predeterminado de FREE_TRIAL_DAYS
+                $endDate = date('Y-m-d H:i:s', strtotime('+' . FREE_TRIAL_DAYS . ' days'));
+
+                // Crear un plan temporal (solo para el período de prueba)
+                $planId = Plan::create([
+                    'name' => 'Prueba Gratuita',
+                    'user_type' => 'advertiser',
+                    'duration' => FREE_TRIAL_DAYS,
+                    'price' => 0,
+                    'max_photos' => 1,
+                    'max_videos' => 0,
+                    'featured' => false,
+                    'description' => 'Período de prueba gratuito'
+                ]);
+            } else {
+                $planId = $plan['id'];
+                $endDate = date('Y-m-d H:i:s', strtotime('+' . $plan['duration'] . ' days'));
+            }
+        } else {
+            // Usar la duración del plan gratuito (14 días)
+            $endDate = date('Y-m-d H:i:s', strtotime('+' . $plan['duration'] . ' days'));
         }
 
         // Crear suscripción de prueba
@@ -206,7 +225,7 @@ class Subscription
             'user_id' => $userId,
             'plan_id' => $planId,
             'payment_id' => null,
-            'status' => 'trial',
+            'status' => 'active', // Cambiado de 'trial' a 'active' para mejor claridad
             'start_date' => $startDate,
             'end_date' => $endDate,
             'auto_renew' => false

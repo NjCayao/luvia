@@ -129,10 +129,6 @@ class ProfileController
      */
     public function processEdit()
     {
-
-        $countryCode = $_POST['country_code'] ?? '+51';
-        $whatsapp = $_POST['whatsapp'] ?? '';
-        $fullWhatsapp = $countryCode . $whatsapp;
         // Verificar que el usuario esté logueado
         if (!isLoggedIn()) {
             http_response_code(401);
@@ -167,6 +163,7 @@ class ProfileController
         $name = $_POST['name'] ?? '';
         $description = $_POST['description'] ?? '';
         $whatsapp = $_POST['whatsapp'] ?? '';
+        $countryCode = $_POST['country_code'] ?? '+51'; // Asegúrate de capturar el código de país
         $provinceId = !empty($_POST['province_id']) ? intval($_POST['province_id']) : null;
         $districtId = !empty($_POST['district_id']) ? intval($_POST['district_id']) : null;
         $location = $_POST['location'] ?? '';
@@ -198,7 +195,8 @@ class ProfileController
             $errors['province_id'] = 'La provincia es obligatoria';
         }
 
-        if (empty($districtId)) {
+        // Solo validar district_id si existe una provincia seleccionada
+        if (!empty($provinceId) && empty($districtId)) {
             $errors['district_id'] = 'El distrito es obligatorio';
         }
 
@@ -213,8 +211,14 @@ class ProfileController
             exit;
         }
 
-        // Limpiar número de WhatsApp
+        // Limpiar número de WhatsApp y asegurar que tenga el código de país
         $whatsapp = preg_replace('/\D/', '', $whatsapp);
+        // Eliminar el símbolo '+' si existe en el código de país
+        $countryCode = ltrim($countryCode, '+');
+        // Si el número no comienza con el código de país, agregarlo
+        if (!preg_match('/^' . $countryCode . '/', $whatsapp)) {
+            $whatsapp = $countryCode . $whatsapp;
+        }
 
         // Verificar si ya existe un perfil para este usuario
         $existingProfile = Profile::getByUserId($userId);
@@ -222,15 +226,27 @@ class ProfileController
         try {
             if ($existingProfile) {
                 // Actualizar perfil existente
-                Profile::update($existingProfile['id'], [
+                $updateData = [
                     'name' => $name,
                     'description' => $description,
                     'whatsapp' => $whatsapp,
-                    'province_id' => $provinceId,
-                    'district_id' => $districtId,
-                    'location' => $location,
                     'schedule' => $schedule
-                ]);
+                ];
+
+                // Solo incluir estos campos si están presentes para evitar errores SQL
+                if (!empty($provinceId)) {
+                    $updateData['province_id'] = $provinceId;
+                }
+
+                if (!empty($districtId)) {
+                    $updateData['district_id'] = $districtId;
+                }
+
+                if (!empty($location)) {
+                    $updateData['location'] = $location;
+                }
+
+                Profile::update($existingProfile['id'], $updateData);
 
                 $profileId = $existingProfile['id'];
                 $message = 'Perfil actualizado correctamente';
@@ -240,18 +256,30 @@ class ProfileController
                 $gender = $user['gender'] ?? 'female';
 
                 // Crear nuevo perfil
-                $profileId = Profile::create([
+                $profileData = [
                     'user_id' => $userId,
                     'name' => $name,
                     'gender' => $gender,
                     'description' => $description,
                     'whatsapp' => $whatsapp,
-                    'province_id' => $provinceId,
-                    'district_id' => $districtId,
-                    'location' => $location,
                     'schedule' => $schedule,
                     'is_verified' => false
-                ]);
+                ];
+
+                // Solo incluir estos campos si están presentes para evitar errores SQL
+                if (!empty($provinceId)) {
+                    $profileData['province_id'] = $provinceId;
+                }
+
+                if (!empty($districtId)) {
+                    $profileData['district_id'] = $districtId;
+                }
+
+                if (!empty($location)) {
+                    $profileData['location'] = $location;
+                }
+
+                $profileId = Profile::create($profileData);
 
                 $message = 'Perfil creado correctamente';
             }
@@ -261,6 +289,12 @@ class ProfileController
                 $rates = json_decode($_POST['rates'], true);
 
                 if (is_array($rates)) {
+                    // Primero eliminar tarifas existentes si las hay
+                    if ($existingProfile) {
+                        Rate::deleteByProfileId($profileId);
+                    }
+
+                    // Luego crear las nuevas tarifas
                     foreach ($rates as $rate) {
                         if (isset($rate['rate_type'], $rate['price'])) {
                             Rate::create([

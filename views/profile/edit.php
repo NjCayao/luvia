@@ -54,18 +54,12 @@
                             </div>
                         </div>
                     </div>
-
+                    
 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="province_id">Provincia *</label>
-                                <div class="input-group mb-2">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                    </div>
-                                    <input type="text" class="form-control" id="province-search" placeholder="Buscar provincia...">
-                                </div>
                                 <select name="province_id" id="province_id" class="form-control" required>
                                     <option value="">Seleccione una provincia</option>
                                     <?php foreach ($provinces as $province): ?>
@@ -384,216 +378,690 @@
     });
 </script>
 
+<!-- Estilos para los selectores con búsqueda -->
+<style>
+  /* Contenedor de select personalizado */
+  .select-search-container {
+    position: relative;
+    width: 100%;
+  }
+  
+  /* Estilos para el campo de búsqueda */
+  .select-search-input {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+  
+  .select-search-input:focus {
+    color: #495057;
+    background-color: #fff;
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+  
+  /* Dropdown de resultados */
+  .select-search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+    margin: 0.125rem 0 0;
+    font-size: 1rem;
+    color: #212529;
+    text-align: left;
+    list-style: none;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 0.25rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.175);
+    display: none;
+  }
+  
+  .select-search-dropdown.show {
+    display: block;
+  }
+  
+  /* Opciones en el dropdown */
+  .select-search-option {
+    display: block;
+    width: 100%;
+    padding: 0.25rem 1.5rem;
+    clear: both;
+    font-weight: 400;
+    color: #212529;
+    text-align: inherit;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+  
+  .select-search-option:hover,
+  .select-search-option.active {
+    color: #16181b;
+    text-decoration: none;
+    background-color: #f8f9fa;
+  }
+  
+  .select-search-option.selected {
+    color: #000;
+    text-decoration: none;
+    background-color: #007bff;
+  }
+  
+  /* Mensaje de no resultados */
+  .select-search-no-results {
+    padding: 0.5rem 1.5rem;
+    color: #6c757d;
+    font-style: italic;
+  }
+  
+  /* Highlight para términos de búsqueda */
+  .select-search-highlight {
+    background-color: #ffffd0;
+    font-weight: bold;
+  }
+  
+  /* Ícono de búsqueda */
+  .select-search-icon {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    color: #6c757d;
+    pointer-events: none;
+  }
+  
+  /* Spinner de carga */
+  .select-search-loading {
+    display: none;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    color: #6c757d;
+  }
+  
+  /* Original select (oculto) */
+  .select-search-original {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
+
+<!-- Script para implementar la búsqueda en los selectores -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const provinceSelect = document.getElementById('province_id');
-        const districtSelect = document.getElementById('district_id');
-
-        // Función para cargar distritos
-        function loadDistricts() {
-            const provinceId = provinceSelect.value;
-
-            // Limpiar distritos
-            districtSelect.innerHTML = '<option value="">Seleccione un distrito</option>';
-
-            if (!provinceId) {
-                districtSelect.disabled = true;
-                return;
-            }
-
-            // Habilitar select
-            districtSelect.disabled = false;
-
-            // Indicador de carga
-            districtSelect.innerHTML = '<option value="">Cargando...</option>';
-
-            // Realizar petición AJAX
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', '<?= url('/ajax_districts.php?province_id=') ?>' + provinceId, true);
-
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-
-                        // Restaurar opción por defecto
-                        districtSelect.innerHTML = '<option value="">Seleccione un distrito</option>';
-
-                        // Agregar opciones de distritos
-                        if (response.success && response.districts && response.districts.length > 0) {
-                            response.districts.forEach(function(district) {
-                                const option = document.createElement('option');
-                                option.value = district.id;
-                                option.textContent = district.name;
-
-                                // Seleccionar distrito guardado si existe
-                                if (<?= isset($profile['district_id']) ? $profile['district_id'] : 'null' ?> == district.id) {
-                                    option.selected = true;
-                                }
-
-                                districtSelect.appendChild(option);
-                            });
-                        } else {
-                            districtSelect.innerHTML = '<option value="">No hay distritos disponibles</option>';
-                        }
-                    } catch (e) {
-                        console.error('Error al procesar respuesta:', e);
-                        districtSelect.innerHTML = '<option value="">Error al cargar distritos</option>';
-                    }
-                } else {
-                    districtSelect.innerHTML = '<option value="">Error al cargar distritos</option>';
-                }
-            };
-
-            xhr.onerror = function() {
-                districtSelect.innerHTML = '<option value="">Error de conexión</option>';
-            };
-
-            xhr.send();
-        }
-
-        // Evento change en provincia
-        provinceSelect.addEventListener('change', loadDistricts);
-
-        // Cargar distritos iniciales si hay provincia seleccionada
-        if (provinceSelect.value) {
-            loadDistricts();
-        }
-    });
-</script>
-
-<script>
-    // Búsqueda de provincias
-const provinceSearch = document.getElementById('province-search');
-if (provinceSearch) {
-    provinceSearch.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase().trim();
-        const provinceOptions = provinceSelect.querySelectorAll('option');
-        let foundProvince = false;
-        
-        provinceOptions.forEach(option => {
-            if (option.value === '') {
-                // Mantener siempre visible la opción "Seleccione una provincia"
-                option.style.display = '';
-                return;
-            }
-            
-            const provinceName = option.textContent.toLowerCase();
-            if (provinceName.includes(searchTerm)) {
-                option.style.display = '';
-                foundProvince = true;
-                
-                // Si la provincia coincide exactamente, seleccionarla automáticamente
-                if (provinceName === searchTerm) {
-                    provinceSelect.value = option.value;
-                    // Cargar los distritos correspondientes
-                    loadDistricts();
-                }
-            } else {
-                option.style.display = 'none';
-            }
-        });
-        
-        // Mostrar mensaje si no se encontraron provincias
-        if (!foundProvince && searchTerm) {
-            // Si no había mensaje de "no se encontraron provincias", agregarlo
-            if (!provinceSelect.querySelector('option[data-no-results]')) {
-                const noResultsOption = document.createElement('option');
-                noResultsOption.textContent = 'No se encontraron provincias con ese nombre';
-                noResultsOption.disabled = true;
-                noResultsOption.setAttribute('data-no-results', 'true');
-                provinceSelect.appendChild(noResultsOption);
-            }
-        } else {
-            // Si había mensaje, eliminarlo
-            const noResultsOption = provinceSelect.querySelector('option[data-no-results]');
-            if (noResultsOption) {
-                provinceSelect.removeChild(noResultsOption);
-            }
-        }
-    });
-}
-
-// Búsqueda de distritos
-const districtSearch = document.getElementById('district-search');
-if (districtSearch) {
-    districtSearch.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase().trim();
-        const districtOptions = districtSelect.querySelectorAll('option');
-        let foundDistrict = false;
-        
-        districtOptions.forEach(option => {
-            if (option.value === '') {
-                // Mantener siempre visible la opción por defecto
-                option.style.display = '';
-                return;
-            }
-            
-            const districtName = option.textContent.toLowerCase();
-            if (districtName.includes(searchTerm)) {
-                option.style.display = '';
-                foundDistrict = true;
-                
-                // Si el distrito coincide exactamente, seleccionarlo automáticamente
-                if (districtName === searchTerm) {
-                    districtSelect.value = option.value;
-                }
-            } else {
-                option.style.display = 'none';
-            }
-        });
-        
-        // Mostrar mensaje si no se encontraron distritos
-        if (!foundDistrict && searchTerm) {
-            // Si no había mensaje de "no se encontraron distritos", agregarlo
-            if (!districtSelect.querySelector('option[data-no-results]')) {
-                const noResultsOption = document.createElement('option');
-                noResultsOption.textContent = 'No se encontraron distritos con ese nombre';
-                noResultsOption.disabled = true;
-                noResultsOption.setAttribute('data-no-results', 'true');
-                districtSelect.appendChild(noResultsOption);
-            }
-        } else {
-            // Si había mensaje, eliminarlo
-            const noResultsOption = districtSelect.querySelector('option[data-no-results]');
-            if (noResultsOption) {
-                districtSelect.removeChild(noResultsOption);
-            }
-        }
-    });
-}
-
-// Actualizar estado del campo de búsqueda de distritos cuando cambia la provincia
-provinceSelect.addEventListener('change', function() {
-    if (districtSearch) {
-        districtSearch.disabled = !this.value;
-        if (!this.value) {
-            districtSearch.value = '';
-        }
+document.addEventListener('DOMContentLoaded', function() {
+  // Inicializar selectores con búsqueda
+  initSelectSearch('province_id', {
+    placeholder: 'Buscar provincia...',
+    noResultsText: 'No se encontraron provincias'
+  });
+  
+  initSelectSearch('district_id', {
+    placeholder: 'Buscar distrito...',
+    noResultsText: 'No se encontraron distritos',
+    dependsOn: 'province_id'
+  });
+  
+  /**
+   * Inicializa un selector con búsqueda
+   * @param {string} selectId - ID del select original
+   * @param {object} options - Opciones de configuración
+   */
+  function initSelectSearch(selectId, options = {}) {
+    const originalSelect = document.getElementById(selectId);
+    if (!originalSelect) return;
+    
+    // Opciones por defecto
+    const config = Object.assign({
+      placeholder: 'Buscar...',
+      noResultsText: 'No se encontraron resultados',
+      dependsOn: null, // ID del select del que depende (para distritos)
+      onSelect: null // Callback cuando se selecciona una opción
+    }, options);
+    
+    // Si depende de otro selector, inicialmente podría estar deshabilitado
+    if (config.dependsOn) {
+      const parentSelect = document.getElementById(config.dependsOn);
+      if (!parentSelect || !parentSelect.value) {
+        // Mantener la funcionalidad original sin alterar
+        return;
+      }
     }
+    
+    // Crear contenedor
+    const container = document.createElement('div');
+    container.className = 'select-search-container';
+    container.id = `${selectId}-container`;
+    
+    // Crear campo de búsqueda
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'form-control select-search-input';
+    searchInput.placeholder = config.placeholder;
+    searchInput.id = `${selectId}-search`;
+    searchInput.autocomplete = 'off';
+    
+    // Añadir ícono de búsqueda
+    const searchIcon = document.createElement('span');
+    searchIcon.className = 'select-search-icon';
+    searchIcon.innerHTML = '<i class="fas fa-search"></i>';
+    
+    // Añadir spinner de carga
+    const loadingSpinner = document.createElement('span');
+    loadingSpinner.className = 'select-search-loading';
+    loadingSpinner.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    // Crear dropdown de resultados
+    const dropdown = document.createElement('div');
+    dropdown.className = 'select-search-dropdown';
+    
+    // Preparar el valor inicial
+    const selectedOption = originalSelect.options[originalSelect.selectedIndex];
+    if (selectedOption && selectedOption.value) {
+      searchInput.value = selectedOption.textContent.trim();
+    }
+    
+    // Añadir elementos al contenedor
+    container.appendChild(searchInput);
+    container.appendChild(searchIcon);
+    container.appendChild(loadingSpinner);
+    container.appendChild(dropdown);
+    
+    // Insertar en el DOM
+    originalSelect.parentNode.insertBefore(container, originalSelect);
+    originalSelect.classList.add('select-search-original');
+    
+    // Variable para almacenar todas las opciones
+    let allOptions = [];
+    
+    // Función para obtener opciones del select original
+    function getOptionsFromSelect() {
+      allOptions = [];
+      Array.from(originalSelect.options).forEach(option => {
+        if (option.value) {
+          allOptions.push({
+            value: option.value,
+            text: option.textContent.trim()
+          });
+        }
+      });
+      return allOptions;
+    }
+    
+    // Inicializar con las opciones actuales
+    getOptionsFromSelect();
+    
+    // Función para mostrar opciones filtradas
+    function showFilteredOptions(filterText = '') {
+      // Limpiar dropdown
+      dropdown.innerHTML = '';
+      
+      // Obtener opciones actualizadas
+      const options = getOptionsFromSelect();
+      
+      // Filtrar opciones según texto
+      const filteredOptions = filterText ? 
+        options.filter(option => option.text.toLowerCase().includes(filterText.toLowerCase())) :
+        options;
+      
+      // Mostrar mensaje si no hay resultados
+      if (filteredOptions.length === 0) {
+        const noResults = document.createElement('div');
+        noResults.className = 'select-search-no-results';
+        noResults.textContent = config.noResultsText;
+        dropdown.appendChild(noResults);
+      } else {
+        // Añadir opciones al dropdown
+        filteredOptions.forEach(option => {
+          const optionElement = document.createElement('div');
+          optionElement.className = 'select-search-option';
+          optionElement.dataset.value = option.value;
+          
+          // Resaltar texto si hay filtro
+          let displayText = option.text;
+          if (filterText) {
+            const regex = new RegExp(`(${filterText})`, 'gi');
+            displayText = displayText.replace(regex, '<span class="select-search-highlight">$1</span>');
+          }
+          
+          optionElement.innerHTML = displayText;
+          
+          // Marcar como seleccionada si es la opción actual
+          if (option.value === originalSelect.value) {
+            optionElement.classList.add('selected');
+          }
+          
+          // Evento de clic
+          optionElement.addEventListener('click', function() {
+            // Establecer valor en el select original
+            originalSelect.value = option.value;
+            
+            // Actualizar texto del input
+            searchInput.value = option.text;
+            
+            // Cerrar dropdown
+            dropdown.classList.remove('show');
+            
+            // Disparar evento change en el select original
+            const event = new Event('change', { bubbles: true });
+            originalSelect.dispatchEvent(event);
+            
+            // Ejecutar callback si existe
+            if (typeof config.onSelect === 'function') {
+              config.onSelect(option);
+            }
+          });
+          
+          dropdown.appendChild(optionElement);
+        });
+      }
+      
+      // Mostrar dropdown
+      dropdown.classList.add('show');
+    }
+    
+    // Eventos para el campo de búsqueda
+    searchInput.addEventListener('focus', function() {
+      showFilteredOptions(this.value);
+    });
+    
+    searchInput.addEventListener('input', function() {
+      showFilteredOptions(this.value);
+      
+      // Si hay una coincidencia exacta, seleccionarla
+      const searchTerm = this.value.toLowerCase();
+      const exactMatch = allOptions.find(option => option.text.toLowerCase() === searchTerm);
+      
+      if (exactMatch) {
+        originalSelect.value = exactMatch.value;
+        
+        // Disparar evento change
+        const event = new Event('change', { bubbles: true });
+        originalSelect.dispatchEvent(event);
+      }
+    });
+    
+    // Cerrar dropdown al hacer clic fuera
+    document.addEventListener('click', function(e) {
+      if (!container.contains(e.target)) {
+        dropdown.classList.remove('show');
+        
+        // Restaurar texto de la opción seleccionada
+        const selectedOption = originalSelect.options[originalSelect.selectedIndex];
+        searchInput.value = selectedOption && selectedOption.value ? 
+          selectedOption.textContent.trim() : '';
+      }
+    });
+    
+    // Navegación con teclado
+    searchInput.addEventListener('keydown', function(e) {
+      const options = dropdown.querySelectorAll('.select-search-option');
+      let activeOption = dropdown.querySelector('.select-search-option.active');
+      let selectedIndex = -1;
+      
+      if (activeOption) {
+        selectedIndex = Array.from(options).indexOf(activeOption);
+      }
+      
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          if (!dropdown.classList.contains('show')) {
+            showFilteredOptions(this.value);
+          } else if (options.length > 0) {
+            const nextIndex = selectedIndex < options.length - 1 ? selectedIndex + 1 : 0;
+            if (activeOption) activeOption.classList.remove('active');
+            options[nextIndex].classList.add('active');
+            options[nextIndex].scrollIntoView({ block: 'nearest' });
+          }
+          break;
+        
+        case 'ArrowUp':
+          e.preventDefault();
+          if (options.length > 0) {
+            const prevIndex = selectedIndex > 0 ? selectedIndex - 1 : options.length - 1;
+            if (activeOption) activeOption.classList.remove('active');
+            options[prevIndex].classList.add('active');
+            options[prevIndex].scrollIntoView({ block: 'nearest' });
+          }
+          break;
+        
+        case 'Enter':
+          e.preventDefault();
+          if (activeOption) {
+            activeOption.click();
+          } else if (options.length === 1) {
+            // Si solo hay una opción, seleccionarla
+            options[0].click();
+          }
+          break;
+        
+        case 'Escape':
+          e.preventDefault();
+          dropdown.classList.remove('show');
+          break;
+      }
+    });
+    
+    // Si el select depende de otro, actualizar cuando cambie
+    if (config.dependsOn) {
+      const parentSelect = document.getElementById(config.dependsOn);
+      if (parentSelect) {
+        parentSelect.addEventListener('change', function() {
+          // Si la dependencia está seleccionada, habilitar el campo
+          if (this.value) {
+            searchInput.disabled = false;
+            
+            // Actualizar opciones después de que el select original se actualice
+            setTimeout(() => {
+              // Actualizar la lista de opciones
+              getOptionsFromSelect();
+              
+              // Limpiar input y cerrar dropdown
+              searchInput.value = '';
+              dropdown.classList.remove('show');
+            }, 300);
+          } else {
+            // Si no hay valor en la dependencia, deshabilitar el campo
+            searchInput.disabled = true;
+            searchInput.value = '';
+            dropdown.classList.remove('show');
+          }
+        });
+        
+        // Inicializamos según el estado actual
+        searchInput.disabled = !parentSelect.value;
+      }
+    }
+    
+    // Actualizar el input si cambia el select programáticamente
+    originalSelect.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      if (selectedOption && selectedOption.value) {
+        searchInput.value = selectedOption.textContent.trim();
+      } else {
+        searchInput.value = '';
+      }
+    });
+  }
+  
+  // Mantener la funcionalidad original de carga de distritos al cambiar provincia
+  const provinceSelect = document.getElementById('province_id');
+  if (provinceSelect) {
+    provinceSelect.addEventListener('change', function() {
+      const provinceId = this.value;
+      const districtSelect = document.getElementById('district_id');
+      const districtSearchInput = document.getElementById('district_id-search');
+      
+      if (!districtSelect) return;
+      
+      // Limpiar distritos
+      districtSelect.innerHTML = '<option value="">Seleccione un distrito</option>';
+      
+      if (!provinceId) {
+        districtSelect.disabled = true;
+        if (districtSearchInput) {
+          districtSearchInput.disabled = true;
+          districtSearchInput.value = '';
+        }
+        return;
+      }
+      
+      // Habilitar select
+      districtSelect.disabled = false;
+      if (districtSearchInput) {
+        districtSearchInput.disabled = false;
+      }
+      
+      // Indicador de carga
+      districtSelect.innerHTML = '<option value="">Cargando...</option>';
+      
+      // Mostrar spinner de carga si existe
+      const loadingSpinner = document.querySelector('#district_id-container .select-search-loading');
+      if (loadingSpinner) {
+        loadingSpinner.style.display = 'block';
+      }
+      
+      // Realizar petición AJAX
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', `<?= url('/ajax_districts.php?province_id=') ?>${provinceId}`, true);
+      
+      xhr.onload = function() {
+        // Ocultar spinner de carga
+        if (loadingSpinner) {
+          loadingSpinner.style.display = 'none';
+        }
+        
+        if (xhr.status === 200) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            
+            // Restaurar opción por defecto
+            districtSelect.innerHTML = '<option value="">Seleccione un distrito</option>';
+            
+            // Agregar opciones de distritos
+            if (response.success && response.districts && response.districts.length > 0) {
+              response.districts.forEach(function(district) {
+                const option = document.createElement('option');
+                option.value = district.id;
+                option.textContent = district.name;
+                
+                // Seleccionar distrito guardado si existe
+                if (<?= isset($profile['district_id']) ? $profile['district_id'] : 'null' ?> == district.id) {
+                  option.selected = true;
+                }
+                
+                districtSelect.appendChild(option);
+              });
+              
+              // Disparar un evento change para actualizar el campo de búsqueda
+              const event = new Event('change', { bubbles: true });
+              districtSelect.dispatchEvent(event);
+            } else {
+              districtSelect.innerHTML = '<option value="">No hay distritos disponibles</option>';
+              
+              // Limpiar campo de búsqueda si existe
+              if (districtSearchInput) {
+                districtSearchInput.value = '';
+              }
+            }
+          } catch (e) {
+            console.error('Error al procesar respuesta:', e);
+            districtSelect.innerHTML = '<option value="">Error al cargar distritos</option>';
+            
+            // Limpiar campo de búsqueda si existe
+            if (districtSearchInput) {
+              districtSearchInput.value = '';
+            }
+          }
+        } else {
+          districtSelect.innerHTML = '<option value="">Error al cargar distritos</option>';
+          
+          // Limpiar campo de búsqueda si existe
+          if (districtSearchInput) {
+            districtSearchInput.value = '';
+          }
+        }
+      };
+      
+      xhr.onerror = function() {
+        // Ocultar spinner de carga
+        if (loadingSpinner) {
+          loadingSpinner.style.display = 'none';
+        }
+        
+        districtSelect.innerHTML = '<option value="">Error de conexión</option>';
+        
+        // Limpiar campo de búsqueda si existe
+        if (districtSearchInput) {
+          districtSearchInput.value = '';
+        }
+      };
+      
+      xhr.send();
+    });
+  }
 });
 </script>
-
-<style>
-    /* Estilo para opciones ocultas */
-    select option[style*="display: none"] {
-        display: none !important;
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+  // Referencia al select de provincias y distritos
+  const provinceSelect = document.getElementById('province_id');
+  const districtSelect = document.getElementById('district_id');
+  
+  if (!provinceSelect || !districtSelect) return;
+  
+  // Función para cargar distritos cuando cambia la provincia
+  function loadDistricts(provinceId) {
+    // Mostrar indicador de carga
+    districtSelect.innerHTML = '<option value="">Cargando distritos...</option>';
+    districtSelect.disabled = true;
+    
+    // Mostrar spinner de carga si existe
+    const loadingSpinner = document.querySelector('#district_id-container .select-search-loading');
+    if (loadingSpinner) {
+      loadingSpinner.style.display = 'block';
     }
     
-    /* Estilo para el mensaje de "no se encontraron resultados" */
-    select option[data-no-results] {
-        font-style: italic;
-        color: #999;
+    // Realizar petición AJAX para cargar distritos
+    fetch(`/ajax_districts.php?province_id=${provinceId}`)
+      .then(response => response.json())
+      .then(data => {
+        // Restaurar opción por defecto
+        districtSelect.innerHTML = '<option value="">Seleccione un distrito</option>';
+        districtSelect.disabled = false;
+        
+        // Ocultar spinner
+        if (loadingSpinner) {
+          loadingSpinner.style.display = 'none';
+        }
+        
+        // Agregar opciones de distritos
+        if (data.success && data.districts && data.districts.length > 0) {
+          data.districts.forEach(function(district) {
+            const option = document.createElement('option');
+            option.value = district.id;
+            option.textContent = district.name;
+            districtSelect.appendChild(option);
+          });
+          
+          // Disparar un evento change para actualizar cualquier componente dependiente
+          const event = new Event('change', { bubbles: true });
+          districtSelect.dispatchEvent(event);
+          
+          // Reinicializar el buscador de distritos si existe
+          reinitDistrictSearch();
+        } else {
+          districtSelect.innerHTML = '<option value="">No hay distritos disponibles</option>';
+        }
+      })
+      .catch(error => {
+        console.error('Error al cargar distritos:', error);
+        districtSelect.innerHTML = '<option value="">Error al cargar distritos</option>';
+        districtSelect.disabled = true;
+        
+        if (loadingSpinner) {
+          loadingSpinner.style.display = 'none';
+        }
+      });
+  }
+  
+  // Escuchar cambios en el select de provincias
+  provinceSelect.addEventListener('change', function() {
+    const provinceId = this.value;
+    
+    // Limpiar distrito cuando se cambia la provincia
+    districtSelect.innerHTML = '<option value="">Seleccione un distrito</option>';
+    districtSelect.value = '';
+    
+    if (!provinceId) {
+      districtSelect.disabled = true;
+      // Si hay un contenedor de búsqueda, deshabilitarlo
+      const districtSearchInput = document.getElementById('district_id-search');
+      if (districtSearchInput) {
+        districtSearchInput.disabled = true;
+        districtSearchInput.value = '';
+      }
+      return;
     }
     
-    /* Estilo para enfatizar los campos de búsqueda */
-    .input-group-text {
-        background-color: #f8f9fa;
-        border-color: #ced4da;
-    }
+    // Cargar distritos para la provincia seleccionada
+    loadDistricts(provinceId);
+  });
+  
+  // Reinicializar la búsqueda de distritos
+  function reinitDistrictSearch() {
+    // Si existe el select-search para distrito, reinicializarlo
+    const districtContainer = document.getElementById('district_id-container');
+    const districtSearchInput = document.getElementById('district_id-search');
     
-    /* Efecto hover para el ícono de búsqueda */
-    .input-group:hover .input-group-text {
-        background-color: #e9ecef;
+    if (districtContainer && districtSearchInput) {
+      // Eliminar distrito container existente
+      districtContainer.remove();
+      
+      // Hacer visible el select original temporalmente
+      districtSelect.classList.remove('select-search-original');
+      districtSelect.style.display = '';
+      
+      // Volver a inicializar el selector de búsqueda
+      setTimeout(() => {
+        if (typeof initSelectSearch === 'function') {
+          initSelectSearch('district_id', {
+            placeholder: 'Buscar distrito...',
+            noResultsText: 'No se encontraron distritos',
+            dependsOn: 'province_id'
+          });
+        }
+      }, 100);
     }
-</style>
+  }
+  
+  // Inicializar distritos si ya hay una provincia seleccionada
+  if (provinceSelect.value) {
+    loadDistricts(provinceSelect.value);
+  }
+  
+  // Mejorar la funcionalidad de la búsqueda de distritos
+  document.addEventListener('click', function(e) {
+    // Si el usuario hace clic en el contenedor del distrito y está deshabilitado
+    if (e.target.closest('#district_id-container') && districtSelect.disabled) {
+      // Informar al usuario que debe seleccionar una provincia primero
+      alert('Por favor, seleccione una provincia primero');
+      
+      // Opcional: enfocar en el selector de provincia para guiar al usuario
+      const provinceSearchInput = document.getElementById('province_id-search');
+      if (provinceSearchInput) {
+        provinceSearchInput.focus();
+      } else {
+        provinceSelect.focus();
+      }
+    }
+  });
+  
+  // Comprobar si los selectores de búsqueda están inicializados correctamente
+  setTimeout(function() {
+    const provinceContainer = document.getElementById('province_id-container');
+    const districtContainer = document.getElementById('district_id-container');
+    
+    // Si provinciaContainer existe pero districtContainer no, podría haber un problema
+    if (provinceContainer && !districtContainer && !districtSelect.disabled) {
+      reinitDistrictSearch();
+    }
+  }, 500);
+});
+</script>
