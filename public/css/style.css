@@ -17,23 +17,6 @@
     background-color: var(--primary-color);
 }
 
-/* Estilos para la página de autenticación */
-.login-page, .register-page {
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
-}
-
-.login-box, .register-box {
-    width: 360px;
-}
-
-.login-card-body, .register-card-body {
-    border-radius: 10px;
-}
-
-.login-logo a, .register-logo a {
-    color: var(--primary-color);
-}
-
 /* Botones personalizados */
 .btn-primary {
     background-color: var(--primary-color);
