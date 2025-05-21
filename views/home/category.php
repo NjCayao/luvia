@@ -122,10 +122,29 @@
                                     <h5 class="card-title"><?= htmlspecialchars($profile['name']) ?></h5>
                                     <p class="card-text">
                                         <i class="fas fa-map-marker-alt text-danger"></i>
-                                        <?= htmlspecialchars($profile['city']) ?> - <?= htmlspecialchars($profile['location']) ?>
+                                        <?php
+                                // Mostrar provincia y distrito si están disponibles
+                                if (!empty($profile['province_name']) && !empty($profile['district_name'])) {
+                                    echo htmlspecialchars($profile['province_name'] . ', ' . $profile['district_name']);
+                                } elseif (!empty($profile['province_name'])) {
+                                    echo htmlspecialchars($profile['province_name']);
+                                } elseif (!empty($profile['province_id'])) {
+                                    // Si solo tenemos IDs pero no nombres, intentar obtener los nombres
+                                    $provinceName = Profile::getProvinceNameById($profile['province_id']);
+                                    $districtName = !empty($profile['district_id']) ? Profile::getDistrictNameById($profile['district_id']) : '';
+
+                                    if ($districtName) {
+                                        echo htmlspecialchars($provinceName . ', ' . $districtName);
+                                    } else {
+                                        echo htmlspecialchars($provinceName);
+                                    }
+                                } else {
+                                    echo 'Ubicación no especificada';
+                                }
+                                ?>
                                     </p>
                                     <!-- <p class="card-text description">
-                                        <?= htmlspecialchars(substr($profile['rate_type'], 0, 100)) ?>...
+                                        <?= htmlspecialchars(substr($profile['rate_type'], 0, 100)) ?>
                                     </p> -->
                                 </div>
 

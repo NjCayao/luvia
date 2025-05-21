@@ -1,20 +1,21 @@
 <style>
-/* Aseguramos que el contenido principal tenga una altura mínima */
-.content-wrapper {
-    min-height: 100vh; /* 100% de la altura de la ventana */
-    display: flex;
-    flex-direction: column;
-}
+    /* Aseguramos que el contenido principal tenga una altura mínima */
+    .content-wrapper {
+        min-height: 100vh;
+        /* 100% de la altura de la ventana */
+        display: flex;
+        flex-direction: column;
+    }
 
-/* Hacemos que el contenido principal ocupe todo el espacio disponible */
-.content {
-    flex: 1;
-}
+    /* Hacemos que el contenido principal ocupe todo el espacio disponible */
+    .content {
+        flex: 1;
+    }
 
-/* Aseguramos que el footer quede al final */
-.main-footer {
-    margin-top: auto;
-}
+    /* Aseguramos que el footer quede al final */
+    .main-footer {
+        margin-top: auto;
+    }
 </style>
 <div class="row">
     <div class="col-md-4">
@@ -23,13 +24,13 @@
             <div class="card-body box-profile">
                 <div class="text-center">
                     <?php if ($profile && $profilePhoto = Media::getPrimaryPhoto($profile['id'])): ?>
-                        <img class="profile-user-img img-fluid img-circle" 
-                             src="<?= url('uploads/photos/' . $profilePhoto['filename']) ?>" 
-                             alt="Foto de perfil">
+                        <img class="profile-user-img img-fluid img-circle"
+                            src="<?= url('uploads/photos/' . $profilePhoto['filename']) ?>"
+                            alt="Foto de perfil">
                     <?php else: ?>
-                        <img class="profile-user-img img-fluid img-circle" 
-                             src="<?= url('plugins/adminlte/img/user-default.jpg') ?>" 
-                             alt="Foto de perfil">
+                        <img class="profile-user-img img-fluid img-circle"
+                            src="<?= url('plugins/adminlte/img/user-default.jpg') ?>"
+                            alt="Foto de perfil">
                     <?php endif; ?>
                 </div>
 
@@ -38,11 +39,11 @@
                 </h3>
 
                 <p class="text-muted text-center">
-                    <?= ucfirst($user['user_type']) ?> - 
+                    <?= ucfirst($user['user_type']) ?> -
                     <?php
-                        if ($user['user_type'] === 'advertiser') {
-                            echo ucfirst($profile['gender'] ?? 'female');
-                        }
+                    if ($user['user_type'] === 'advertiser') {
+                        echo ucfirst($profile['gender'] ?? 'female');
+                    }
                     ?>
                 </p>
 
@@ -55,7 +56,13 @@
                             <b>Clics en WhatsApp</b> <a class="float-right"><?= $profile['whatsapp_clicks'] ?></a>
                         </li>
                         <li class="list-group-item">
-                            <b>Ciudad</b> <a class="float-right"><?= htmlspecialchars($profile['city']) ?></a>
+                            <b>Ubicación</b> <a class="float-right">
+                                <?php
+                                $provinceName = Profile::getProvinceNameById($profile['province_id'] ?? 0);
+                                $districtName = Profile::getDistrictNameById($profile['district_id'] ?? 0);
+                                echo htmlspecialchars($provinceName . ($districtName ? ', ' . $districtName : ''));
+                                ?>
+                            </a>
                         </li>
                     </ul>
                 <?php endif; ?>
@@ -69,7 +76,7 @@
                         <i class="fas fa-edit"></i> Editar Perfil
                     </a>
                 <?php endif; ?>
-                
+
                 <?php if ($profile): ?>
                     <a href="<?= url('/perfil/' . $profile['id']) ?>" class="btn btn-default btn-block mt-2">
                         <i class="fas fa-eye"></i> Ver Perfil Público
@@ -222,7 +229,7 @@
                             <h3 class="timeline-header">Último inicio de sesión</h3>
                         </div>
                     </div>
-                    
+
                     <?php if ($profile): ?>
                         <div>
                             <i class="fas fa-eye bg-info"></i>
@@ -235,7 +242,7 @@
                             </div>
                         </div>
                     <?php endif; ?>
-                    
+
                     <?php if ($subscription): ?>
                         <div>
                             <i class="fas fa-credit-card bg-success"></i>
@@ -248,7 +255,7 @@
                             </div>
                         </div>
                     <?php endif; ?>
-                    
+
                     <div>
                         <i class="fas fa-user-plus bg-success"></i>
                         <div class="timeline-item">
@@ -256,7 +263,7 @@
                             <h3 class="timeline-header">Cuenta creada</h3>
                         </div>
                     </div>
-                    
+
                     <div>
                         <i class="fas fa-clock bg-gray"></i>
                     </div>
@@ -265,4 +272,3 @@
         </div>
     </div>
 </div>
-

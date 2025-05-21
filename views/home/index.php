@@ -20,8 +20,8 @@
                         <div class="col-md-6 mb-3">
                             <select name="city" class="form-control">
                                 <option value="">Todas las ciudades</option>
-                                <?php foreach ($cities as $city): ?>
-                                    <option value="<?= htmlspecialchars($city) ?>"><?= htmlspecialchars($city) ?></option>
+                                <?php foreach ($provinces as $province): ?>
+                                    <option value="<?= $province['id'] ?>"><?= htmlspecialchars($province['name']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -101,7 +101,26 @@
                             <h6 class="card-title mb-1"><?= htmlspecialchars($profile['name']) ?></h6>
                             <p class="card-text mb-1" style="font-size: 0.8rem;">
                                 <i class="fas fa-map-marker-alt text-danger"></i>
-                                <?= htmlspecialchars($profile['city']) ?>
+                                <?php
+                                // Mostrar provincia y distrito si están disponibles
+                                if (!empty($profile['province_name']) && !empty($profile['district_name'])) {
+                                    echo htmlspecialchars($profile['province_name'] . ', ' . $profile['district_name']);
+                                } elseif (!empty($profile['province_name'])) {
+                                    echo htmlspecialchars($profile['province_name']);
+                                } elseif (!empty($profile['province_id'])) {
+                                    // Si solo tenemos IDs pero no nombres, intentar obtener los nombres
+                                    $provinceName = Profile::getProvinceNameById($profile['province_id']);
+                                    $districtName = !empty($profile['district_id']) ? Profile::getDistrictNameById($profile['district_id']) : '';
+
+                                    if ($districtName) {
+                                        echo htmlspecialchars($provinceName . ', ' . $districtName);
+                                    } else {
+                                        echo htmlspecialchars($provinceName);
+                                    }
+                                } else {
+                                    echo 'Ubicación no especificada';
+                                }
+                                ?>
                             </p>
                         </div>
 
@@ -156,7 +175,26 @@
                             <h5 class="card-title"><?= htmlspecialchars($profile['name']) ?></h5>
                             <p class="card-text">
                                 <i class="fas fa-map-marker-alt text-danger"></i>
-                                <?= htmlspecialchars($profile['city']) ?>
+                                <?php
+// Mostrar provincia y distrito si están disponibles
+if (!empty($profile['province_name']) && !empty($profile['district_name'])) {
+    echo htmlspecialchars($profile['province_name'] . ', ' . $profile['district_name']);
+} elseif (!empty($profile['province_name'])) {
+    echo htmlspecialchars($profile['province_name']);
+} elseif (!empty($profile['province_id'])) {
+    // Si solo tenemos IDs pero no nombres, intentar obtener los nombres
+    $provinceName = Profile::getProvinceNameById($profile['province_id']);
+    $districtName = !empty($profile['district_id']) ? Profile::getDistrictNameById($profile['district_id']) : '';
+    
+    if ($districtName) {
+        echo htmlspecialchars($provinceName . ', ' . $districtName);
+    } else {
+        echo htmlspecialchars($provinceName);
+    }
+} else {
+    echo 'Ubicación no especificada';
+}
+?>
                             </p>
                         </div>
 

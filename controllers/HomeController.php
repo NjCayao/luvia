@@ -37,7 +37,7 @@ class HomeController
         $newProfiles = Profile::getNewProfiles('female', 8);
 
         // Obtener ciudades disponibles para el filtro
-        $cities = Profile::getAvailableCities();
+        $provinces = Profile::getAvailableProvinces();
 
         $pageTitle = 'Inicio';
 
@@ -93,7 +93,7 @@ class HomeController
         $totalPages = ceil($totalProfiles / $limit);
 
         // Obtener ciudades disponibles para el filtro
-        $cities = Profile::getAvailableCities();
+       $provinces = Profile::getAvailableProvinces();
 
         // Título y encabezado según género
         $genderNames = [
@@ -259,7 +259,7 @@ class HomeController
         $totalPages = ceil($totalResults / $limit);
 
         // Obtener ciudades para filtro
-        $cities = Profile::getAvailableCities();
+        $provinces = Profile::getAvailableProvinces();
 
         // Título de la página
         $pageTitle = 'Resultados de búsqueda';

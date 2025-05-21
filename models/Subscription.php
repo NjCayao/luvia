@@ -200,17 +200,22 @@ class Subscription
                 // Si no hay ningún plan gratuito, usar el valor predeterminado de FREE_TRIAL_DAYS
                 $endDate = date('Y-m-d H:i:s', strtotime('+' . FREE_TRIAL_DAYS . ' days'));
 
-                // Crear un plan temporal (solo para el período de prueba)
-                $planId = Plan::create([
-                    'name' => 'Prueba Gratuita',
-                    'user_type' => 'advertiser',
-                    'duration' => FREE_TRIAL_DAYS,
-                    'price' => 0,
-                    'max_photos' => 1,
-                    'max_videos' => 0,
-                    'featured' => false,
-                    'description' => 'Período de prueba gratuito'
-                ]);
+                // Intentar crear un plan gratuito temporal
+                try {
+                    $planId = Plan::create([
+                        'name' => 'Prueba Gratuita',
+                        'user_type' => 'advertiser',
+                        'duration' => FREE_TRIAL_DAYS,
+                        'price' => 0,
+                        'max_photos' => 1,
+                        'max_videos' => 0,
+                        'featured' => false,
+                        'description' => 'Período de prueba gratuito'
+                    ]);
+                } catch (Exception $e) {
+                    error_log("Error al crear plan temporal: " . $e->getMessage());
+                    return false;
+                }
             } else {
                 $planId = $plan['id'];
                 $endDate = date('Y-m-d H:i:s', strtotime('+' . $plan['duration'] . ' days'));

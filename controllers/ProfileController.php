@@ -10,6 +10,23 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/validation.php';
 
+
+set_exception_handler(function ($e) {
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Error del servidor: ' . $e->getMessage()]);
+    exit;
+});
+
+// También podemos capturar errores fatales
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Error fatal: ' . $error['message']]);
+        exit;
+    }
+});
+
 class ProfileController
 {
     /**
@@ -185,9 +202,9 @@ class ProfileController
         if (empty($whatsapp)) {
             $errors['whatsapp'] = 'El número de WhatsApp es obligatorio';
         } else {
-            $phoneError = validatePhone($whatsapp);
-            if ($phoneError) {
-                $errors['whatsapp'] = $phoneError;
+            // Validación simple para asegurar que solo sean números
+            if (!preg_match('/^[0-9]{9}$/', $whatsapp)) {
+                $errors['whatsapp'] = 'El número de WhatsApp debe tener 9 dígitos';
             }
         }
 
@@ -211,14 +228,13 @@ class ProfileController
             exit;
         }
 
-        // Limpiar número de WhatsApp y asegurar que tenga el código de país
+        // Preparar el número de WhatsApp con el código de país
+        // Eliminar cualquier carácter no numérico del número y el código de país
         $whatsapp = preg_replace('/\D/', '', $whatsapp);
-        // Eliminar el símbolo '+' si existe en el código de país
-        $countryCode = ltrim($countryCode, '+');
-        // Si el número no comienza con el código de país, agregarlo
-        if (!preg_match('/^' . $countryCode . '/', $whatsapp)) {
-            $whatsapp = $countryCode . $whatsapp;
-        }
+        $countryCode = preg_replace('/\D/', '', $countryCode);
+
+        // Combinar código de país y número
+        $fullWhatsapp = $countryCode . $whatsapp;
 
         // Verificar si ya existe un perfil para este usuario
         $existingProfile = Profile::getByUserId($userId);
@@ -229,23 +245,18 @@ class ProfileController
                 $updateData = [
                     'name' => $name,
                     'description' => $description,
-                    'whatsapp' => $whatsapp,
-                    'schedule' => $schedule
+                    'whatsapp' => $fullWhatsapp,
+                    'schedule' => $schedule,
+                    'province_id' => $provinceId,
+                    'district_id' => $districtId
                 ];
 
-                // Solo incluir estos campos si están presentes para evitar errores SQL
-                if (!empty($provinceId)) {
-                    $updateData['province_id'] = $provinceId;
-                }
-
-                if (!empty($districtId)) {
-                    $updateData['district_id'] = $districtId;
-                }
-
+                // Solo incluir location si está presente
                 if (!empty($location)) {
                     $updateData['location'] = $location;
                 }
 
+                // Actualizar el perfil
                 Profile::update($existingProfile['id'], $updateData);
 
                 $profileId = $existingProfile['id'];
@@ -261,24 +272,19 @@ class ProfileController
                     'name' => $name,
                     'gender' => $gender,
                     'description' => $description,
-                    'whatsapp' => $whatsapp,
+                    'whatsapp' => $fullWhatsapp,
                     'schedule' => $schedule,
+                    'province_id' => $provinceId,
+                    'district_id' => $districtId,
                     'is_verified' => false
                 ];
 
-                // Solo incluir estos campos si están presentes para evitar errores SQL
-                if (!empty($provinceId)) {
-                    $profileData['province_id'] = $provinceId;
-                }
-
-                if (!empty($districtId)) {
-                    $profileData['district_id'] = $districtId;
-                }
-
+                // Solo incluir location si está presente
                 if (!empty($location)) {
                     $profileData['location'] = $location;
                 }
 
+                // Crear el perfil
                 $profileId = Profile::create($profileData);
 
                 $message = 'Perfil creado correctamente';
@@ -291,7 +297,10 @@ class ProfileController
                 if (is_array($rates)) {
                     // Primero eliminar tarifas existentes si las hay
                     if ($existingProfile) {
-                        Rate::deleteByProfileId($profileId);
+                        // Eliminar tarifas directamente
+                        $conn = getDbConnection();
+                        $stmt = $conn->prepare("DELETE FROM rates WHERE profile_id = ?");
+                        $stmt->execute([$profileId]);
                     }
 
                     // Luego crear las nuevas tarifas
@@ -311,7 +320,7 @@ class ProfileController
             echo json_encode([
                 'success' => true,
                 'message' => $message,
-                'redirect' => url('/usuario/medios')
+                'redirect' => url('/usuario/dashboard')
             ]);
         } catch (Exception $e) {
             http_response_code(500);

@@ -34,24 +34,45 @@ class Profile
     {
         $conn = getDbConnection();
 
-        $sql = "INSERT INTO profiles (user_id, name, gender, description, whatsapp, city, location, schedule, is_verified) 
-                VALUES (:user_id, :name, :gender, :description, :whatsapp, :city, :location, :schedule, :is_verified)";
+        // Asegurarse de que solo se usen campos que existen en la tabla
+        $allowedFields = [
+            'user_id',
+            'name',
+            'gender',
+            'description',
+            'whatsapp',
+            'province_id',
+            'district_id',
+            'location',
+            'schedule',
+            'is_verified'
+        ];
+
+        $insertData = [];
+        $placeholders = [];
+        $values = [];
+
+        foreach ($profileData as $field => $value) {
+            if (in_array($field, $allowedFields)) {
+                $insertData[] = $field;
+                $placeholders[] = "?";
+                $values[] = $value;
+            }
+        }
+
+        if (empty($insertData)) {
+            throw new Exception("No hay datos válidos para insertar");
+        }
+
+        $sql = "INSERT INTO profiles (" . implode(', ', $insertData) . ") 
+            VALUES (" . implode(', ', $placeholders) . ")";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':user_id', $profileData['user_id']);
-        $stmt->bindParam(':name', $profileData['name']);
-        $stmt->bindParam(':gender', $profileData['gender']);
-        $stmt->bindParam(':description', $profileData['description']);
-        $stmt->bindParam(':whatsapp', $profileData['whatsapp']);
-        $stmt->bindParam(':city', $profileData['city']);
-        $stmt->bindParam(':location', $profileData['location']);
-        $stmt->bindParam(':schedule', $profileData['schedule']);
-        $stmt->bindParam(':is_verified', $profileData['is_verified']);
-
-        $stmt->execute();
+        $stmt->execute($values);
 
         return $conn->lastInsertId();
     }
+
 
     /**
      * Actualiza un perfil
@@ -499,26 +520,30 @@ class Profile
     /**
      * Busca perfiles por provincia y distrito
      */
-    public static function searchByLocation($province, $district = null, $gender = null, $limit = 20, $offset = 0)
+    public static function searchByLocation($provinceId, $districtId = null, $gender = null, $limit = 20, $offset = 0)
     {
         $conn = getDbConnection();
 
-        $params = [$province];
-        $whereConditions = ['p.province = ?'];
+        $params = [$provinceId]; // El primer parámetro siempre es province_id
+        $whereConditions = ['p.province_id = ?']; // Cambiado "p.province" a "p.province_id"
 
-        if ($district !== null && !empty($district)) {
-            $whereConditions[] = 'p.district = ?';
-            $params[] = $district;
+        // Si se proporciona un distrito, añadirlo a la condición
+        if ($districtId !== null && !empty($districtId)) {
+            $whereConditions[] = 'p.district_id = ?'; // Cambiado "p.district" a "p.district_id"
+            $params[] = $districtId;
         }
 
+        // Si se proporciona un género, añadirlo a la condición
         if ($gender !== null) {
             $whereConditions[] = 'p.gender = ?';
             $params[] = $gender;
         }
 
+        // Añadir límite y offset a los parámetros
         $params[] = $limit;
         $params[] = $offset;
 
+        // Construir la cláusula WHERE
         $whereClause = implode(' AND ', $whereConditions);
 
         $sql = "SELECT p.*, u.id as user_id, u.status as user_status, 
@@ -533,7 +558,7 @@ class Profile
             ) m ON m.profile_id = p.id
             LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
             WHERE $whereClause AND (u.status = 'active' OR s.id IS NOT NULL)
-            ORDER BY is_verified DESC, s.id IS NOT NULL DESC, p.id DESC
+            ORDER BY p.is_verified DESC, s.id IS NOT NULL DESC, p.id DESC
             LIMIT ? OFFSET ?";
 
         $stmt = $conn->prepare($sql);
