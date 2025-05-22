@@ -27,6 +27,6 @@
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set X-XSS-Protection "1; mode=block"
     
-    # Configurar CSP básico
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
+    # CSP COMPLETO para Izipay (incluyendo frame-src)
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.micuentaweb.pe https://secure.micuentaweb.pe https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://api.micuentaweb.pe https://secure.micuentaweb.pe https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.micuentaweb.pe https://secure.micuentaweb.pe; frame-src 'self' https://api.micuentaweb.pe https://secure.micuentaweb.pe;"
 </IfModule>

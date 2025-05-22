@@ -12,30 +12,57 @@
 
                     <hr>
 
-                    <!-- Formulario de pago integrado con JavaScript V4.0 -->
-                    <div id="payment-form-container">
-                        <h5>Información de pago:</h5>
+                    <!-- Opciones de pago -->
+                    <div id="payment-options">
+                        <h5>Selecciona tu método de pago:</h5>
                         
-                        <!-- Indicador de carga -->
-                        <div id="loading-indicator" class="text-center">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="sr-only">Cargando formulario de pago...</span>
+                        <div class="row mt-4">
+                            <!-- Pago con Tarjeta -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card payment-option h-100" data-method="card">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-credit-card fa-3x text-primary mb-3"></i>
+                                        <h5>Tarjeta de Crédito/Débito</h5>
+                                        <p class="text-muted">Visa, Mastercard, American Express</p>
+                                        <button type="button" class="btn btn-primary btn-block" id="pay-with-card">
+                                            <i class="fas fa-credit-card mr-2"></i>
+                                            Pagar con Tarjeta
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <p class="mt-2">Preparando formulario de pago seguro...</p>
+                            
+                            <!-- Pago con Yape -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card payment-option h-100" data-method="yape">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-mobile-alt fa-3x text-success mb-3"></i>
+                                        <h5>Yape</h5>
+                                        <p class="text-muted">Pago rápido y seguro</p>
+                                        <button type="button" class="btn btn-success btn-block" id="pay-with-yape">
+                                            <i class="fas fa-mobile-alt mr-2"></i>
+                                            Pagar con Yape
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- El formulario de pago se insertará aquí -->
-                        <div id="payment-form" style="display: none;">
-                            <!-- Formulario de Izipay se generará automáticamente aquí -->
+                        <!-- Información de seguridad -->
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-shield-alt mr-2"></i>
+                            <strong>Pago 100% seguro:</strong> Serás redirigido a la plataforma segura de Izipay para completar tu pago. 
+                            Después del pago, regresarás automáticamente a nuestro sitio.
                         </div>
-                        
-                        <!-- Botón de pago -->
-                        <div class="mt-4" id="pay-button-container" style="display: none;">
-                            <button type="button" class="btn btn-primary btn-lg btn-block" id="pay-button">
-                                <i class="fas fa-credit-card mr-2"></i>
-                                Pagar S/. <?= number_format($plan['price'], 2) ?>
-                            </button>
+                    </div>
+
+                    <!-- Indicador de procesamiento -->
+                    <div id="processing-indicator" class="text-center d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Procesando...</span>
                         </div>
+                        <p class="mt-2">Preparando el pago seguro...</p>
+                        <p class="text-muted">Serás redirigido en unos segundos</p>
                     </div>
 
                     <!-- Mensaje de error -->
@@ -104,9 +131,20 @@
             <!-- Información adicional -->
             <div class="card mt-3">
                 <div class="card-body">
-                    <h6><i class="fas fa-question-circle mr-1"></i>¿Necesitas ayuda?</h6>
+                    <h6><i class="fas fa-question-circle mr-1"></i>¿Cómo funciona?</h6>
+                    <ol class="small">
+                        <li>Selecciona tu método de pago preferido</li>
+                        <li>Serás redirigido a la plataforma segura de Izipay</li>
+                        <li>Completa tus datos de pago</li>
+                        <li>Regresa automáticamente a nuestro sitio</li>
+                        <li>¡Tu suscripción estará activa inmediatamente!</li>
+                    </ol>
+                    
+                    <hr>
+                    
+                    <h6><i class="fas fa-headset mr-1"></i>¿Necesitas ayuda?</h6>
                     <p class="small text-muted mb-2">
-                        Si tienes problemas con tu pago, puedes contactarnos:
+                        Si tienes problemas con tu pago:
                     </p>
                     <p class="small">
                         <i class="fas fa-envelope mr-1"></i> soporte@erophia.com<br>
@@ -118,19 +156,6 @@
     </div>
 </div>
 
-<!-- CSS de Izipay - OBLIGATORIO en el HEAD -->
-<link rel="stylesheet" href="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css">
-
-<!-- Script de Izipay V4.0 - OBLIGATORIO en el HEAD -->
-<script src="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
-        kr-public-key="13448745:testpublickey_XxLY9Q0zcRG18WNjf5ah1GUhhlliqNRicaaJiWhXDp2Tb"
-        kr-post-url-success="<?= url('/pago/confirmacion') ?>"
-        kr-post-url-refused="<?= url('/pago/fallido') ?>">
-</script>
-
-<!-- Tema clásico de Izipay -->
-<script src="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic.js"></script>
-
 <!-- Datos para JavaScript -->
 <script>
     // Configuración para el checkout
@@ -141,27 +166,38 @@
         processUrl: '<?= url('/pago/procesar-session') ?>'
     };
 </script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const paymentError = document.getElementById('paymentError');
     const paymentErrorMessage = document.getElementById('paymentErrorMessage');
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const paymentForm = document.getElementById('payment-form');
-    const payButtonContainer = document.getElementById('pay-button-container');
+    const processingIndicator = document.getElementById('processing-indicator');
+    const paymentOptions = document.getElementById('payment-options');
     
     function showError(message) {
+        console.error('Payment Error:', message);
         paymentErrorMessage.textContent = message;
         paymentError.classList.remove('d-none');
-        paymentError.scrollIntoView({ behavior: 'smooth' });
+        
+        // Ocultar processing y mostrar opciones
+        processingIndicator.classList.add('d-none');
+        paymentOptions.classList.remove('d-none');
     }
     
     function hideError() {
         paymentError.classList.add('d-none');
     }
     
-    // Inicializar formulario de pago
-    function initPaymentForm() {
+    function showProcessing() {
+        paymentOptions.classList.add('d-none');
+        processingIndicator.classList.remove('d-none');
         hideError();
+    }
+    
+    // Procesar pago con método específico
+    function processPayment(method) {
+        console.log('Procesando pago con método:', method);
+        showProcessing();
         
         // Crear sesión de pago
         fetch(window.checkoutConfig.processUrl, {
@@ -171,78 +207,85 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({
                 plan_id: window.checkoutConfig.planId,
+                payment_method: method,
                 csrf_token: window.checkoutConfig.csrfToken
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
-            if (data.success) {
-                loadIzipayScript(data.session);
+            console.log('Response data:', data);
+            if (data.success && data.session.paymentUrl) {
+                console.log('Redirigiendo a:', data.session.paymentUrl);
+                
+                // Pequeña demora para que el usuario vea el mensaje
+                setTimeout(function() {
+                    window.location.href = data.session.paymentUrl;
+                }, 1000);
             } else {
                 showError(data.error || 'Error al inicializar el pago');
-                loadingIndicator.style.display = 'none';
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            showError('Error de conexión al inicializar el pago');
-            loadingIndicator.style.display = 'none';
+            console.error('Fetch Error:', error);
+            showError('Error de conexión al procesar el pago');
         });
     }
     
-    // Ya no necesitamos cargar el script dinámicamente
-    function loadIzipayScript(session) {
-        // El script ya está cargado en el head
-        setupPaymentForm(session.formToken);
-    }
+    // Event listeners para los botones
+    document.getElementById('pay-with-card').addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+        processPayment('card');
+    });
     
-    // Configurar formulario de pago
-    function setupPaymentForm(formToken) {
-        // Ocultar loading
-        loadingIndicator.style.display = 'none';
-        
-        // Mostrar formulario
-        paymentForm.style.display = 'block';
-        payButtonContainer.style.display = 'block';
-        
-        // Insertar formulario de Izipay
-        paymentForm.innerHTML = '<div class="kr-embedded" kr-form-token="' + formToken + '"></div>';
-        
-        // Configurar botón de pago
-        document.getElementById('pay-button').addEventListener('click', function() {
-            this.disabled = true;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
-            
-            // El formulario de Izipay manejará el envío
-            if (typeof KR !== 'undefined') {
-                KR.submit();
-            } else {
-                showError('Error: Sistema de pago no disponible');
-                this.disabled = false;
-                this.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pagar S/. <?= number_format($plan['price'], 2) ?>';
-            }
+    document.getElementById('pay-with-yape').addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+        processPayment('yape');
+    });
+    
+    // Efectos hover para las tarjetas
+    const paymentCards = document.querySelectorAll('.payment-option');
+    paymentCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
         });
         
-        // Eventos de Izipay
-        if (typeof KR !== 'undefined') {
-            KR.onError(function(event) {
-                showError('Error en el pago: ' + (event.KR.result.message || 'Error desconocido'));
-                document.getElementById('pay-button').disabled = false;
-                document.getElementById('pay-button').innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pagar S/. <?= number_format($plan['price'], 2) ?>';
-            });
-            
-            KR.onFormReady(function() {
-                console.log('Formulario de pago listo');
-            });
-            
-            KR.onSubmit(function(event) {
-                console.log('Pago enviado');
-                return true;
-            });
-        }
-    }
-    
-    // Inicializar
-    initPaymentForm();
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+    });
 });
 </script>
+
+<style>
+.payment-option {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.payment-option:hover {
+    border-color: #007bff;
+    transform: translateY(-5px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.payment-option.selected {
+    border-color: #28a745;
+    background-color: #f8f9fa;
+}
+
+#processing-indicator {
+    padding: 40px 20px;
+}
+
+.fa-3x {
+    font-size: 3rem;
+}
+</style>

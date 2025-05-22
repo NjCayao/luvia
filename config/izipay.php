@@ -1,20 +1,31 @@
 <?php
-// config/izipay.php - NUEVA CONFIGURACIÓN PARA API REST V4.0
+// config/izipay.php - CONFIGURACIÓN A VERIFICAR
+
+// 1. VERIFICAR EN TU PANEL DE IZIPAY:
+// - Merchant ID: debe coincidir con IZIPAY_TEST_USERNAME
+// - Clave de Test: debe coincidir con IZIPAY_TEST_PASSWORD
+// - Clave pública: debe coincidir con IZIPAY_TEST_PUBLIC_KEY
+// - Clave HMAC: debe coincidir con IZIPAY_TEST_HMAC_KEY
+
+// 2. URLs DE RETORNO EN EL PANEL DE IZIPAY (configurar en el back office):
+// URL de retorno exitoso: https://erophia.com/pago/confirmacion (o http://localhost/luvia/public/pago/confirmacion)
+// URL de retorno fallido: https://erophia.com/pago/fallido (o http://localhost/luvia/public/pago/fallido)
+// URL de notificación IPN: https://erophia.com/api/pago/ipn (o http://localhost/luvia/public/api/pago/ipn)
 
 // Entorno (TEST o PRODUCTION)
 define('IZIPAY_ENVIRONMENT', 'TEST');
 
-// Credenciales para API REST V4.0 - VERIFICAR ESTAS CREDENCIALES EN TU PANEL
-define('IZIPAY_TEST_USERNAME', '13448745'); // Mismo que merchant ID
-define('IZIPAY_TEST_PASSWORD', 'testpassword_9Fjd8w0VmP0lMLkWCIOOCEyTmQl2NBiH1ilk98X6E9b5q');
-define('IZIPAY_TEST_PUBLIC_KEY', '13448745:testpublickey_XxLY9Q0zcRG18WNjf5ah1GUhhlliqNRicaaJiWhXDp2Tb');
-define('IZIPAY_TEST_HMAC_KEY', '1WmjIjvBCSHmnfA6GFmZrqsN9wUROW4DN2YRnk0yMadu9');
+// Credenciales para API REST V4.0 - ACTUALIZAR CON TUS DATOS REALES
+define('IZIPAY_TEST_USERNAME', '13448745'); // Tu Merchant ID
+define('IZIPAY_TEST_PASSWORD', 'testpassword_9Fjd8w0VmP0lMLkWCIOOCEyTmQl2NBiH1ilk98X6E9b5q'); // Tu clave de test
+define('IZIPAY_TEST_PUBLIC_KEY', '13448745:testpublickey_XxLY9Q0zcRG18WNjf5ah1GUhhlliqNRicaaJiWhXDp2Tb'); // Tu clave pública
+define('IZIPAY_TEST_HMAC_KEY', '1WmjIjvBCSHmnfA6GFmZrqsN9wUROW4DN2YRnk0yMadu9'); // Tu clave HMAC
 
-// URLs de la API REST V4.0
+// URLs de la API REST V4.0 - ESTAS SON CORRECTAS
 define('IZIPAY_TEST_API_ENDPOINT', 'https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment');
 define('IZIPAY_TEST_CLIENT_ENDPOINT', 'https://api.micuentaweb.pe');
 
-// Credenciales para producción
+// Credenciales para producción (cambiar cuando vayas a producción)
 define('IZIPAY_PRODUCTION_USERNAME', '13448745');
 define('IZIPAY_PRODUCTION_PASSWORD', 'CAMBIAR_POR_CONTRASEÑA_PRODUCCION');
 define('IZIPAY_PRODUCTION_PUBLIC_KEY', 'CAMBIAR_POR_CLAVE_PUBLICA_PRODUCCION');
@@ -27,7 +38,7 @@ define('IZIPAY_RETURN_URL', '/pago/confirmacion');
 define('IZIPAY_CANCEL_URL', '/pago/fallido');
 define('IZIPAY_NOTIFICATION_URL', '/api/pago/ipn');
 
-// Obtener configuración basada en el entorno
+// Resto del archivo... (funciones existentes)
 function getIzipayConfig() {
     if (IZIPAY_ENVIRONMENT === 'PRODUCTION') {
         return [
@@ -50,7 +61,6 @@ function getIzipayConfig() {
     }
 }
 
-// Obtener URL completa
 function getFullIzipayUrl($path) {
     $isProduction = isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] === 'erophia.com';
     

@@ -1,5 +1,5 @@
 <?php
-// services/IzipayService.php - NUEVA IMPLEMENTACIÓN CON API REST V4.0
+// services/IzipayService.php - IMPLEMENTACIÓN CON REDIRECCIÓN EXTERNA
 
 require_once __DIR__ . '/../config/izipay.php';
 
@@ -11,10 +11,10 @@ class IzipayService {
     }
     
     /**
-     * Crea un FormToken para el pago - NUEVA IMPLEMENTACIÓN REST V4.0
+     * Crea una sesión de pago y devuelve la URL de redirección
      */
     public function createPaymentSession($amount, $orderId, $userEmail, $description = '') {
-        error_log("=== IZIPAY REST API V4.0 SESSION ===");
+        error_log("=== IZIPAY REDIRECT SESSION ===");
         error_log("Amount: $amount");
         error_log("Order ID: $orderId");
         error_log("User Email: $userEmail");
@@ -22,7 +22,12 @@ class IzipayService {
         // Convertir a céntimos
         $amountCents = (int)($amount * 100);
         
-        // Preparar datos para la API REST
+        // URLs de retorno completas
+        $successUrl = getFullIzipayUrl('/pago/confirmacion');
+        $failedUrl = getFullIzipayUrl('/pago/fallido');
+        $ipnUrl = getFullIzipayUrl('/api/pago/ipn');
+        
+        // Preparar datos para la API REST V4.0
         $requestData = [
             'amount' => $amountCents,
             'currency' => 'PEN',
@@ -32,12 +37,63 @@ class IzipayService {
             ],
             'metadata' => [
                 'description' => $description
+            ],
+            // URLs de retorno
+            'contrib' => [
+                'successUrl' => $successUrl,
+                'errorUrl' => $failedUrl,
+                'ipnTargetUrl' => $ipnUrl
             ]
         ];
         
         error_log("Request data: " . json_encode($requestData));
+        error_log("Success URL: " . $successUrl);
+        error_log("Failed URL: " . $failedUrl);
+        error_log("IPN URL: " . $ipnUrl);
         
         // Hacer petición a la API REST
+        $response = $this->makeApiRequest($requestData);
+        
+        if (!$response || !isset($response['answer']['webRedirectRequest'])) {
+            throw new Exception('Error al crear sesión de pago: ' . ($response['answer']['errorMessage'] ?? 'Respuesta inválida'));
+        }
+        
+        $redirectData = $response['answer']['webRedirectRequest'];
+        $paymentUrl = $redirectData['redirectURL'];
+        
+        error_log("Payment URL generada: $paymentUrl");
+        error_log("=== END IZIPAY SESSION ===");
+        
+        return [
+            'paymentUrl' => $paymentUrl,
+            'redirectData' => $redirectData,
+            'orderId' => $orderId
+        ];
+    }
+    
+    /**
+     * Alternativa: Crear FormToken para redirección manual
+     */
+    public function createFormToken($amount, $orderId, $userEmail, $description = '') {
+        error_log("=== IZIPAY FORM TOKEN ===");
+        
+        // Convertir a céntimos
+        $amountCents = (int)($amount * 100);
+        
+        // URLs de retorno completas
+        $successUrl = getFullIzipayUrl('/pago/confirmacion');
+        $failedUrl = getFullIzipayUrl('/pago/fallido');
+        
+        // Preparar datos básicos
+        $requestData = [
+            'amount' => $amountCents,
+            'currency' => 'PEN',
+            'orderId' => $orderId,
+            'customer' => [
+                'email' => $userEmail
+            ]
+        ];
+        
         $response = $this->makeApiRequest($requestData);
         
         if (!$response || !isset($response['answer']['formToken'])) {
@@ -46,13 +102,18 @@ class IzipayService {
         
         $formToken = $response['answer']['formToken'];
         
-        error_log("FormToken generado: $formToken");
-        error_log("=== END IZIPAY SESSION ===");
+        // Construir URL de redirección manual
+        $paymentUrl = $this->config['clientEndpoint'] . '/vads-payment/?kr-form-token=' . $formToken;
+        
+        error_log("FormToken: $formToken");
+        error_log("Payment URL: $paymentUrl");
+        error_log("=== END FORM TOKEN ===");
         
         return [
             'formToken' => $formToken,
-            'publicKey' => $this->config['publicKey'],
-            'clientEndpoint' => $this->config['clientEndpoint'],
+            'paymentUrl' => $paymentUrl,
+            'successUrl' => $successUrl,
+            'failedUrl' => $failedUrl,
             'orderId' => $orderId
         ];
     }
@@ -71,7 +132,6 @@ class IzipayService {
         ];
         
         error_log("API URL: $url");
-        error_log("Auth header: Basic $auth");
         
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -81,6 +141,7 @@ class IzipayService {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false); // No seguir redirecciones automáticamente
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -107,20 +168,11 @@ class IzipayService {
     }
     
     /**
-     * Verifica la firma de un hash (para IPN)
-     */
-    public function verifyHash($hash, $data) {
-        $calculatedHash = hash_hmac('sha256', $data, $this->config['hmacKey']);
-        return hash_equals($calculatedHash, $hash);
-    }
-    
-    /**
-     * Procesa la notificación IPN - ADAPTADO PARA REST V4.0
+     * Procesa la notificación IPN
      */
     public function processIpnNotification($requestBody, $headers) {
-        error_log("=== IPN NOTIFICATION V4.0 ===");
+        error_log("=== IPN NOTIFICATION ===");
         error_log("Request body: $requestBody");
-        error_log("Headers: " . print_r($headers, true));
         
         // Verificar que tenemos datos
         if (empty($requestBody)) {
@@ -145,8 +197,7 @@ class IzipayService {
         $transactionDetails = $data['transactionDetails'] ?? [];
         
         $orderId = $orderDetails['orderId'] ?? null;
-        $status = $transactionDetails['cardDetails']['effectiveStrongAuthentication'] ?? 
-                  $data['orderStatus'] ?? 'UNKNOWN';
+        $status = $data['orderStatus'] ?? 'UNKNOWN';
         
         // Mapear estado
         switch ($status) {
@@ -178,27 +229,19 @@ class IzipayService {
     }
     
     /**
-     * Métodos de compatibilidad con el código existente
+     * Verifica la firma de un hash (para IPN)
      */
+    public function verifyHash($hash, $data) {
+        $calculatedHash = hash_hmac('sha256', $data, $this->config['hmacKey']);
+        return hash_equals($calculatedHash, $hash);
+    }
+    
+    // Métodos de compatibilidad
     public function createCardPaymentSession($amount, $orderId, $userEmail, $description = '') {
-        return $this->createPaymentSession($amount, $orderId, $userEmail, $description);
+        return $this->createFormToken($amount, $orderId, $userEmail, $description);
     }
     
     public function createYapePaymentSession($amount, $orderId, $userEmail, $description = '') {
-        return $this->createPaymentSession($amount, $orderId, $userEmail, $description);
-    }
-    
-    /**
-     * Verifica el estado del pago desde los parámetros de retorno
-     */
-    public function checkPaymentStatus($orderId) {
-        // En la nueva implementación, el estado se verifica por IPN
-        // o por consulta directa a la API si es necesario
-        
-        // Por ahora, returnear estado pendiente
-        return [
-            'status' => 'PENDING',
-            'orderId' => $orderId
-        ];
+        return $this->createFormToken($amount, $orderId, $userEmail, $description);
     }
 }
