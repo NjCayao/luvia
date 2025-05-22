@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 22-05-2025 a las 20:03:34
+-- Tiempo de generación: 23-05-2025 a las 00:17:24
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.1.25
 
@@ -1907,12 +1907,23 @@ CREATE TABLE `payments` (
   `currency` varchar(3) DEFAULT 'PEN',
   `payment_method` varchar(50) NOT NULL COMMENT 'card, yape, etc',
   `transaction_id` varchar(100) DEFAULT NULL,
+  `order_id` varchar(100) DEFAULT NULL,
   `payment_status` enum('pending','processing','completed','failed','refunded') DEFAULT 'pending',
-  `izipay_session_id` varchar(100) DEFAULT NULL,
+  `izipay_session_id` text DEFAULT NULL,
   `error_message` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `payments`
+--
+
+INSERT INTO `payments` (`id`, `user_id`, `plan_id`, `amount`, `currency`, `payment_method`, `transaction_id`, `order_id`, `payment_status`, `izipay_session_id`, `error_message`, `created_at`, `updated_at`) VALUES
+(1, 12, 5, 5.00, 'PEN', 'card', NULL, 'LUV-1747947531-12-8685', 'pending', 'LUV-1747947531-12-8685', NULL, '2025-05-22 20:58:51', '2025-05-22 20:58:51'),
+(2, 12, 5, 5.00, 'PEN', 'card', NULL, 'LUV-1747949076-12-6242', 'pending', 'LUV-1747949076-12-6242', NULL, '2025-05-22 21:24:36', '2025-05-22 21:24:36'),
+(3, 12, 5, 5.00, 'PEN', 'card', NULL, 'LUV-1747951158-12-5485', 'pending', '26OzyM4uq3RDu6MIxEWdrVwA255eyJhbW91bnQiOjUwMCwiY3VycmVuY3kiOiJQRU4iLCJtb2RlIjoiVEVTVCIsInZlcnNpb24iO', NULL, '2025-05-22 21:59:18', '2025-05-22 21:59:19'),
+(4, 12, 5, 5.00, 'PEN', 'card', NULL, 'LUV-1747951485-12-4032', 'pending', '262EadS3EETlWewXF7PexwKw255eyJhbW91bnQiOjUwMCwiY3VycmVuY3kiOiJQRU4iLCJtb2RlIjoiVEVTVCIsInZlcnNpb24iOjQsIm9yZGVySWQiOiJMVVYtMTc0Nzk1MTQ4NS0xMi00MDMyIiwic2hvcE5hbWUiOiJJWkkqd3d3LkVyb3BoaWEuY29tICg1ODMzNDQ0KSIsImZvcm1BY3Rpb24iOiJQQVlNRU5UIiwicmlza0FuYWx5c2VyIjp7ImZpbmdlclByaW50c0lkIjoiNTMxYzEyYTUtZDdjYi00YTBmLTg3MTYtMzgzZGQzNGMyNjc2IiwianNVcmwiOiJodHRwczovL3NlY3VyZS5taWN1ZW50YXdlYi5wZS90cmFzL2FuYWx5emVyL3B1YmxpYy92MS9jaGVja2VyLzUzMWMxMmE1LWQ3Y2ItNGEwZi04NzE2LTM4M2RkMzRjMjY3NiJ9LCJjYXRlZ29yaWVzIjp7ImRlYml0Q3JlZGl0Q2FyZHMiOnsiYXBwSWQiOiJjYXJkcyIsInBhcmFtIjpbIkFNRVgiLCJNQVNURVJDQVJEX0RFQklUIiwiTUFTVEVSQ0FSRCIsIlZJU0EiLCJWSVNBX0VMRUNUUk9OIiwiVklTQV9ERUJJVCIsIkRJTkVSUyJdfX0sImNhcmRzIjp7IkFNRVgiOnsiZmllbGRzIjp7InNlY3VyaXR5Q29kZSI6eyJtYXhMZW5ndGgiOjR9LCJpbnN0YWxsbWVudE51bWJlciI6eyJ2YWx1ZSI6Ii0xIiwidmFsdWVzIjp7Ii0xIjoiMTo6Ojo6NTAwIiwiRFlOQU1JQyI6Ijo6Ojo6In0sInJlcXVpcmVkIjp0cnVlLCJzZW5zaXRpdmUiOmZhbHNlLCJoaWRkZW4iOmZhbHNlLCJjbGVhck9uRXJyb3IiOmZhbHNlfSwiY2FyZEhvbGRlck5hbWUiOnsicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6ZmFsc2UsImhpZGRlbiI6ZmFsc2UsImNsZWFyT25FcnJvciI6ZmFsc2V9LCJmaXJzdEluc3RhbGxtZW50RGVsYXkiOnsidmFsdWUiOiIwIiwidmFsdWVzIjp7IjAiOiIwIiwiRFlOQU1JQyI6IkRZTkFNSUMifSwicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6ZmFsc2UsImhpZGRlbiI6ZmFsc2UsImNsZWFyT25FcnJvciI6ZmFsc2V9fSwiY29weUZyb20iOiJjYXJkcy5ERUZBVUxUIiwic2VwYXJhdGVCdXR0b24iOmZhbHNlfSwiTUFTVEVSQ0FSRF9ERUJJVCI6eyJmaWVsZHMiOnsiaW5zdGFsbG1lbnROdW1iZXIiOnsidmFsdWUiOiItMSIsInZhbHVlcyI6eyItMSI6IjE6Ojo6OjUwMCIsIkRZTkFNSUMiOiI6Ojo6OiJ9LCJyZXF1aXJlZCI6dHJ1ZSwic2Vuc2l0aXZlIjpmYWxzZSwiaGlkZGVuIjpmYWxzZSwiY2xlYXJPbkVycm9yIjpmYWxzZX0sImNhcmRIb2xkZXJOYW1lIjp7InJlcXVpcmVkIjp0cnVlLCJzZW5zaXRpdmUiOmZhbHNlLCJoaWRkZW4iOmZhbHNlLCJjbGVhck9uRXJyb3IiOmZhbHNlfSwiZmlyc3RJbnN0YWxsbWVudERlbGF5Ijp7InZhbHVlIjoiMCIsInZhbHVlcyI6eyIwIjoiMCIsIkRZTkFNSUMiOiJEWU5BTUlDIn0sInJlcXVpcmVkIjp0cnVlLCJzZW5zaXRpdmUiOmZhbHNlLCJoaWRkZW4iOmZhbHNlLCJjbGVhck9uRXJyb3IiOmZhbHNlfX0sImNvcHlGcm9tIjoiY2FyZHMuREVGQVVMVCIsInNlcGFyYXRlQnV0dG9uIjpmYWxzZX0sIk1BU1RFUkNBUkQiOnsiZmllbGRzIjp7Imluc3RhbGxtZW50TnVtYmVyIjp7InZhbHVlIjoiLTEiLCJ2YWx1ZXMiOnsiLTEiOiIxOjo6Ojo1MDAiLCJEWU5BTUlDIjoiOjo6OjoifSwicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6ZmFsc2UsImhpZGRlbiI6ZmFsc2UsImNsZWFyT25FcnJvciI6ZmFsc2V9LCJjYXJkSG9sZGVyTmFtZSI6eyJyZXF1aXJlZCI6dHJ1ZSwic2Vuc2l0aXZlIjpmYWxzZSwiaGlkZGVuIjpmYWxzZSwiY2xlYXJPbkVycm9yIjpmYWxzZX0sImZpcnN0SW5zdGFsbG1lbnREZWxheSI6eyJ2YWx1ZSI6IjAiLCJ2YWx1ZXMiOnsiMCI6IjAiLCJEWU5BTUlDIjoiRFlOQU1JQyJ9LCJyZXF1aXJlZCI6dHJ1ZSwic2Vuc2l0aXZlIjpmYWxzZSwiaGlkZGVuIjpmYWxzZSwiY2xlYXJPbkVycm9yIjpmYWxzZX19LCJjb3B5RnJvbSI6ImNhcmRzLkRFRkFVTFQiLCJzZXBhcmF0ZUJ1dHRvbiI6ZmFsc2V9LCJWSVNBIjp7ImZpZWxkcyI6eyJpbnN0YWxsbWVudE51bWJlciI6eyJ2YWx1ZSI6Ii0xIiwidmFsdWVzIjp7Ii0xIjoiMTo6Ojo6NTAwIiwiRFlOQU1JQyI6Ijo6Ojo6In0sInJlcXVpcmVkIjp0cnVlLCJzZW5zaXRpdmUiOmZhbHNlLCJoaWRkZW4iOmZhbHNlLCJjbGVhck9uRXJyb3IiOmZhbHNlfSwiY2FyZEhvbGRlck5hbWUiOnsicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6ZmFsc2UsImhpZGRlbiI6ZmFsc2UsImNsZWFyT25FcnJvciI6ZmFsc2V9LCJmaXJzdEluc3RhbGxtZW50RGVsYXkiOnsidmFsdWUiOiIwIiwidmFsdWVzIjp7IjAiOiIwIiwiRFlOQU1JQyI6IkRZTkFNSUMifSwicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6ZmFsc2UsImhpZGRlbiI6ZmFsc2UsImNsZWFyT25FcnJvciI6ZmFsc2V9fSwiY29weUZyb20iOiJjYXJkcy5ERUZBVUxUIiwic2VwYXJhdGVCdXR0b24iOmZhbHNlfSwiVklTQV9FTEVDVFJPTiI6eyJmaWVsZHMiOnsiaW5zdGFsbG1lbnROdW1iZXIiOnsidmFsdWUiOiItMSIsInZhbHVlcyI6eyItMSI6IjE6Ojo6OjUwMCIsIkRZTkFNSUMiOiI6Ojo6OiJ9LCJyZXF1aXJlZCI6dHJ1ZSwic2Vuc2l0aXZlIjpmYWxzZSwiaGlkZGVuIjpmYWxzZSwiY2xlYXJPbkVycm9yIjpmYWxzZX0sImNhcmRIb2xkZXJOYW1lIjp7InJlcXVpcmVkIjp0cnVlLCJzZW5zaXRpdmUiOmZhbHNlLCJoaWRkZW4iOmZhbHNlLCJjbGVhck9uRXJyb3IiOmZhbHNlfSwiZmlyc3RJbnN0YWxsbWVudERlbGF5Ijp7InZhbHVlIjoiMCIsInZhbHVlcyI6eyIwIjoiMCIsIkRZTkFNSUMiOiJEWU5BTUlDIn0sInJlcXVpcmVkIjp0cnVlLCJzZW5zaXRpdmUiOmZhbHNlLCJoaWRkZW4iOmZhbHNlLCJjbGVhck9uRXJyb3IiOmZhbHNlfX0sImNvcHlGcm9tIjoiY2FyZHMuREVGQVVMVCIsInNlcGFyYXRlQnV0dG9uIjpmYWxzZX0sIkRFRkFVTFQiOnsiZmllbGRzIjp7InBhbiI6eyJtaW5MZW5ndGgiOjEwLCJtYXhMZW5ndGgiOjE5LCJ2YWxpZGF0b3JzIjpbIk5VTUVSSUMiLCJMVUhOIl0sInJlcXVpcmVkIjp0cnVlLCJzZW5zaXRpdmUiOnRydWUsImhpZGRlbiI6ZmFsc2UsImNsZWFyT25FcnJvciI6dHJ1ZX0sImV4cGlyeURhdGUiOnsicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6dHJ1ZSwiaGlkZGVuIjpmYWxzZSwiY2xlYXJPbkVycm9yIjp0cnVlfSwic2VjdXJpdHlDb2RlIjp7Im1pbkxlbmd0aCI6MywibWF4TGVuZ3RoIjozLCJ2YWxpZGF0b3JzIjpbIk5VTUVSSUMiXSwicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6dHJ1ZSwiaGlkZGVuIjpmYWxzZSwiY2xlYXJPbkVycm9yIjp0cnVlfX0sInNlcGFyYXRlQnV0dG9uIjpmYWxzZX0sIlZJU0FfREVCSVQiOnsiZmllbGRzIjp7Imluc3RhbGxtZW50TnVtYmVyIjp7InZhbHVlIjoiLTEiLCJ2YWx1ZXMiOnsiLTEiOiIxOjo6Ojo1MDAiLCJEWU5BTUlDIjoiOjo6OjoifSwicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6ZmFsc2UsImhpZGRlbiI6ZmFsc2UsImNsZWFyT25FcnJvciI6ZmFsc2V9LCJjYXJkSG9sZGVyTmFtZSI6eyJyZXF1aXJlZCI6dHJ1ZSwic2Vuc2l0aXZlIjpmYWxzZSwiaGlkZGVuIjpmYWxzZSwiY2xlYXJPbkVycm9yIjpmYWxzZX0sImZpcnN0SW5zdGFsbG1lbnREZWxheSI6eyJ2YWx1ZSI6IjAiLCJ2YWx1ZXMiOnsiMCI6IjAiLCJEWU5BTUlDIjoiRFlOQU1JQyJ9LCJyZXF1aXJlZCI6dHJ1ZSwic2Vuc2l0aXZlIjpmYWxzZSwiaGlkZGVuIjpmYWxzZSwiY2xlYXJPbkVycm9yIjpmYWxzZX19LCJjb3B5RnJvbSI6ImNhcmRzLkRFRkFVTFQiLCJzZXBhcmF0ZUJ1dHRvbiI6ZmFsc2V9LCJESU5FUlMiOnsiZmllbGRzIjp7Imluc3RhbGxtZW50TnVtYmVyIjp7InZhbHVlIjoiLTEiLCJ2YWx1ZXMiOnsiLTEiOiIxOjo6Ojo1MDAiLCJEWU5BTUlDIjoiOjo6OjoifSwicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6ZmFsc2UsImhpZGRlbiI6ZmFsc2UsImNsZWFyT25FcnJvciI6ZmFsc2V9LCJmaXJzdEluc3RhbGxtZW50RGVsYXkiOnsidmFsdWUiOiIwIiwidmFsdWVzIjp7IjAiOiIwIiwiRFlOQU1JQyI6IkRZTkFNSUMifSwicmVxdWlyZWQiOnRydWUsInNlbnNpdGl2ZSI6ZmFsc2UsImhpZGRlbiI6ZmFsc2UsImNsZWFyT25FcnJvciI6ZmFsc2V9fSwiY29weUZyb20iOiJjYXJkcy5ERUZBVUxUIiwic2VwYXJhdGVCdXR0b24iOmZhbHNlfX0sInNtYXJ0Rm9ybSI6eyJDQVJEUyI6eyJhbGxvd0lGcmFtZSI6ZmFsc2UsInJhbmsiOjAsImRlYWRFbmRQYXltZW50TWV0aG9kIjpmYWxzZSwibmV3UGF5bWVudFJlcXVpcmVkIjpmYWxzZSwid2FsbGV0IjpmYWxzZX19LCJhcGlSZXN0VmVyc2lvbiI6IjQuMCIsImNvdW50cnkiOiJQRSIsImpTZXNzaW9uSWQiOiIxRTFGRDhDMTFCNURGYzJkNGE2MUE4MzJGQkZFRGVCRTQzQTk5NWMxLnZhZHdvcmxkYXBpMDItdGxzLXByb2QtZnItbHlyYSIsImN1c3RvbWVyRW1haWwiOiJlbWVyc29uY2F5YW9AZ21haWwuY29tIiwicGFydGlhbFBheW1lbnRzQWxsb3dlZCI6ZmFsc2V9d902', NULL, '2025-05-22 22:04:45', '2025-05-22 22:04:46');
 
 -- --------------------------------------------------------
 
@@ -1977,7 +1988,7 @@ CREATE TABLE `profiles` (
 --
 
 INSERT INTO `profiles` (`id`, `user_id`, `name`, `gender`, `description`, `whatsapp`, `province_id`, `district_id`, `location`, `schedule`, `is_verified`, `views`, `whatsapp_clicks`, `created_at`, `updated_at`) VALUES
-(1, 2, 'María López', 'female', 'Hola, soy María. Ofrezco compañía de calidad para caballeros respetuosos. Contacta para más detalles.', '982226893', 1, 1, 'Miraflores', 'Lunes a Viernes: 10am - 8pm\r\nSábado: 12pm - 6pm', 1, 75, 0, '2025-05-14 19:38:05', '2025-05-22 02:03:32'),
+(1, 2, 'María López', 'female', 'Hola, soy María. Ofrezco compañía de calidad para caballeros respetuosos. Contacta para más detalles.', '982226893', 1, 1, 'Miraflores', 'Lunes a Viernes: 10am - 8pm\r\nSábado: 12pm - 6pm', 1, 76, 0, '2025-05-14 19:38:05', '2025-05-22 18:31:20'),
 (2, 3, 'Juan Pérez', 'male', 'Soy Juan, ofrezco compañía masculina de calidad. Discreto y respetuoso.', '51952345678', 1, 1, 'San Isidro', 'Lunes a Sábado: 2pm - 10pm', 1, 0, 0, '2025-05-14 19:38:05', '2025-05-20 23:58:03'),
 (3, 4, 'Alex Vargas', 'trans', 'Hola, soy Alex. Bella trans ofreciendo experiencias inolvidables.', '51953456789', 1, 1, 'San Borja', 'Todos los días: 12pm - 12am', 0, 0, 0, '2025-05-14 19:38:05', '2025-05-20 23:58:08');
 
@@ -2301,7 +2312,7 @@ INSERT INTO `users` (`id`, `phone`, `email`, `password`, `user_type`, `status`, 
 (3, '952345678', 'juan@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'advertiser', 'active', 1, 1, NULL, NULL, NULL, '2025-05-14 19:37:35', '2025-05-14 19:37:35'),
 (4, '953456789', 'alex@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'advertiser', 'active', 1, 1, NULL, NULL, NULL, '2025-05-14 19:37:35', '2025-05-16 00:48:40'),
 (5, '959876543', 'cliente@gmail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'visitor', 'active', 1, 1, NULL, NULL, '2025-05-20 20:54:45', '2025-05-14 19:37:45', '2025-05-21 01:54:45'),
-(12, '51958973136', 'emersoncayao@gmail.com', '$2y$10$TeryDe9Cb/wkpSLzeqrSwOXfonnQbITbbeUrFXnkuamKECjlg0pQ2', 'visitor', 'active', 1, 0, '751106', '2025-05-22 15:53:54', '2025-05-21 16:03:11', '2025-05-21 20:53:54', '2025-05-21 21:03:11');
+(12, '51958973136', 'emersoncayao@gmail.com', '$2y$10$TeryDe9Cb/wkpSLzeqrSwOXfonnQbITbbeUrFXnkuamKECjlg0pQ2', 'visitor', 'active', 1, 0, '751106', '2025-05-22 15:53:54', '2025-05-22 15:58:48', '2025-05-21 20:53:54', '2025-05-22 20:58:48');
 
 -- --------------------------------------------------------
 
@@ -2429,7 +2440,7 @@ ALTER TABLE `media`
 -- AUTO_INCREMENT de la tabla `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `plans`

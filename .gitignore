@@ -1,2 +1,4 @@
 # Ignorar carpeta de 
 twilio.php
+public/img
+public/uploads  

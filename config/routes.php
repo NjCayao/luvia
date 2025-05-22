@@ -447,5 +447,12 @@ $routes = [
         'auth' => true,
         'admin' => true,
         'method' => 'POST'
+    ],
+    // Nuevo endpoint para API V4.0 IZIPAY
+    '/pago/procesar-session' => [
+        'controller' => 'PaymentController',
+        'action' => 'processPaymentSession',
+        'auth' => true,
+        'method' => 'POST'
     ]
 ];

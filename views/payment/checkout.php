@@ -12,60 +12,29 @@
 
                     <hr>
 
-                    <h5>Selecciona tu método de pago:</h5>
-
-                    <ul class="nav nav-tabs" id="paymentTabs" role="tablist">
-                        <li class="nav-item">
-                            <a class="nav-link active" id="card-tab" data-toggle="tab" href="#card" role="tab">
-                                <i class="fas fa-credit-card mr-1"></i>Tarjeta de Crédito/Débito
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="yape-tab" data-toggle="tab" href="#yape" role="tab">
-                                <i class="fab fa-yape mr-1"></i>Yape
-                            </a>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content mt-3" id="paymentTabContent">
-                        <!-- Tarjeta de Crédito/Débito -->
-                        <div class="tab-pane fade show active" id="card" role="tabpanel">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                Pago seguro procesado por Izipay. Aceptamos Visa, Mastercard y otras tarjetas.
+                    <!-- Formulario de pago integrado con JavaScript V4.0 -->
+                    <div id="payment-form-container">
+                        <h5>Información de pago:</h5>
+                        
+                        <!-- Indicador de carga -->
+                        <div id="loading-indicator" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Cargando formulario de pago...</span>
                             </div>
-                            
-                            <form id="cardPaymentForm">
-                                <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
-                                <input type="hidden" name="plan_id" value="<?= $plan['id'] ?>">
-
-                                <div class="form-group">
-                                    <button type="submit" class="btn btn-primary btn-lg btn-block" id="cardPayBtn">
-                                        <i class="fas fa-credit-card mr-2"></i>
-                                        Pagar con Tarjeta S/. <?= number_format($plan['price'], 2) ?>
-                                    </button>
-                                </div>
-                            </form>
+                            <p class="mt-2">Preparando formulario de pago seguro...</p>
                         </div>
-
-                        <!-- Yape -->
-                        <div class="tab-pane fade" id="yape" role="tabpanel">
-                            <div class="alert alert-success">
-                                <i class="fas fa-mobile-alt mr-1"></i>
-                                Pago rápido y seguro con tu aplicación Yape.
-                            </div>
-                            
-                            <form id="yapePaymentForm">
-                                <input type="hidden" name="csrf_token" value="<?= getCsrfToken() ?>">
-                                <input type="hidden" name="plan_id" value="<?= $plan['id'] ?>">
-
-                                <div class="form-group">
-                                    <button type="submit" class="btn btn-success btn-lg btn-block" id="yapePayBtn">
-                                        <i class="fab fa-yape mr-2"></i>
-                                        Pagar con Yape S/. <?= number_format($plan['price'], 2) ?>
-                                    </button>
-                                </div>
-                            </form>
+                        
+                        <!-- El formulario de pago se insertará aquí -->
+                        <div id="payment-form" style="display: none;">
+                            <!-- Formulario de Izipay se generará automáticamente aquí -->
+                        </div>
+                        
+                        <!-- Botón de pago -->
+                        <div class="mt-4" id="pay-button-container" style="display: none;">
+                            <button type="button" class="btn btn-primary btn-lg btn-block" id="pay-button">
+                                <i class="fas fa-credit-card mr-2"></i>
+                                Pagar S/. <?= number_format($plan['price'], 2) ?>
+                            </button>
                         </div>
                     </div>
 
@@ -149,94 +118,131 @@
     </div>
 </div>
 
+<!-- CSS de Izipay - OBLIGATORIO en el HEAD -->
+<link rel="stylesheet" href="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css">
+
+<!-- Script de Izipay V4.0 - OBLIGATORIO en el HEAD -->
+<script src="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
+        kr-public-key="13448745:testpublickey_XxLY9Q0zcRG18WNjf5ah1GUhhlliqNRicaaJiWhXDp2Tb"
+        kr-post-url-success="<?= url('/pago/confirmacion') ?>"
+        kr-post-url-refused="<?= url('/pago/fallido') ?>">
+</script>
+
+<!-- Tema clásico de Izipay -->
+<script src="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic.js"></script>
+
+<!-- Datos para JavaScript -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const paymentError = document.getElementById('paymentError');
-        const paymentErrorMessage = document.getElementById('paymentErrorMessage');
+    // Configuración para el checkout
+    window.checkoutConfig = {
+        planId: <?= $plan['id'] ?>,
+        amount: <?= $plan['price'] ?>,
+        csrfToken: '<?= getCsrfToken() ?>',
+        processUrl: '<?= url('/pago/procesar-session') ?>'
+    };
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentError = document.getElementById('paymentError');
+    const paymentErrorMessage = document.getElementById('paymentErrorMessage');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const paymentForm = document.getElementById('payment-form');
+    const payButtonContainer = document.getElementById('pay-button-container');
+    
+    function showError(message) {
+        paymentErrorMessage.textContent = message;
+        paymentError.classList.remove('d-none');
+        paymentError.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function hideError() {
+        paymentError.classList.add('d-none');
+    }
+    
+    // Inicializar formulario de pago
+    function initPaymentForm() {
+        hideError();
         
-        function showError(message) {
-            paymentErrorMessage.textContent = message;
-            paymentError.classList.remove('d-none');
-            // Scroll to error
-            paymentError.scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        function hideError() {
-            paymentError.classList.add('d-none');
-        }
-        
-        // Formulario de pago con tarjeta
-        document.getElementById('cardPaymentForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            hideError();
-
-            const formData = new FormData(this);
-            const button = document.getElementById('cardPayBtn');
-            const originalText = button.innerHTML;
-
-            // Mostrar indicador de carga
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
-
-            fetch('<?= url('/pago/procesar-tarjeta') ?>', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.redirect_url) {
-                        // Redirigir a la página de pago de Izipay
-                        window.location.href = data.redirect_url;
-                    } else {
-                        // Mostrar error
-                        showError(data.error || 'Error al procesar el pago');
-                        button.disabled = false;
-                        button.innerHTML = originalText;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showError('Error de conexión. Por favor, intenta nuevamente.');
-                    button.disabled = false;
-                    button.innerHTML = originalText;
-                });
+        // Crear sesión de pago
+        fetch(window.checkoutConfig.processUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                plan_id: window.checkoutConfig.planId,
+                csrf_token: window.checkoutConfig.csrfToken
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadIzipayScript(data.session);
+            } else {
+                showError(data.error || 'Error al inicializar el pago');
+                loadingIndicator.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error de conexión al inicializar el pago');
+            loadingIndicator.style.display = 'none';
         });
-
-        // Formulario de pago con Yape
-        document.getElementById('yapePaymentForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            hideError();
-
-            const formData = new FormData(this);
-            const button = document.getElementById('yapePayBtn');
-            const originalText = button.innerHTML;
-
-            // Mostrar indicador de carga
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
-
-            fetch('<?= url('/pago/procesar-yape') ?>', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.redirect_url) {
-                        // Redirigir a la página de pago de Izipay
-                        window.location.href = data.redirect_url;
-                    } else {
-                        // Mostrar error
-                        showError(data.error || 'Error al procesar el pago');
-                        button.disabled = false;
-                        button.innerHTML = originalText;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showError('Error de conexión. Por favor, intenta nuevamente.');
-                    button.disabled = false;
-                    button.innerHTML = originalText;
-                });
+    }
+    
+    // Ya no necesitamos cargar el script dinámicamente
+    function loadIzipayScript(session) {
+        // El script ya está cargado en el head
+        setupPaymentForm(session.formToken);
+    }
+    
+    // Configurar formulario de pago
+    function setupPaymentForm(formToken) {
+        // Ocultar loading
+        loadingIndicator.style.display = 'none';
+        
+        // Mostrar formulario
+        paymentForm.style.display = 'block';
+        payButtonContainer.style.display = 'block';
+        
+        // Insertar formulario de Izipay
+        paymentForm.innerHTML = '<div class="kr-embedded" kr-form-token="' + formToken + '"></div>';
+        
+        // Configurar botón de pago
+        document.getElementById('pay-button').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+            
+            // El formulario de Izipay manejará el envío
+            if (typeof KR !== 'undefined') {
+                KR.submit();
+            } else {
+                showError('Error: Sistema de pago no disponible');
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pagar S/. <?= number_format($plan['price'], 2) ?>';
+            }
         });
-    });
+        
+        // Eventos de Izipay
+        if (typeof KR !== 'undefined') {
+            KR.onError(function(event) {
+                showError('Error en el pago: ' + (event.KR.result.message || 'Error desconocido'));
+                document.getElementById('pay-button').disabled = false;
+                document.getElementById('pay-button').innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pagar S/. <?= number_format($plan['price'], 2) ?>';
+            });
+            
+            KR.onFormReady(function() {
+                console.log('Formulario de pago listo');
+            });
+            
+            KR.onSubmit(function(event) {
+                console.log('Pago enviado');
+                return true;
+            });
+        }
+    }
+    
+    // Inicializar
+    initPaymentForm();
+});
 </script>

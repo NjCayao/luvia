@@ -9,11 +9,11 @@ define('APP_VERSION', '1.0.0');
 $isProduction = isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] === 'erophia.com';
 
 if ($isProduction) {
-    // Configuración para producción
+    // Configuración para producción - CORREGIDA
     define('APP_ENV', 'production');
     define('APP_DEBUG', false);
-    define('PUBLIC_URL', 'http://localhost/luvia');
-    define('APP_URL', PUBLIC_URL . '/public');
+    define('PUBLIC_URL', 'https://erophia.com'); // ✅ CORREGIDO
+    define('APP_URL', 'https://erophia.com');    // ✅ CORREGIDO
 } else {
     // Configuración para desarrollo
     define('APP_ENV', 'development');

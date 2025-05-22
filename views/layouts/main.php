@@ -59,6 +59,32 @@
     <?php if (isset($extraCss)): ?>
         <?= $extraCss ?>
     <?php endif; ?>
+
+    <?php   
+    // SOLO para páginas de checkout (usar condición)
+
+    $isCheckoutPage = strpos($_SERVER['REQUEST_URI'], '/pago/checkout/') !== false;
+
+    if ($isCheckoutPage): ?>
+        <!-- CSS de Izipay V4.0 -->
+        <link rel="stylesheet" href="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css">
+
+        <!-- Script principal de Izipay V4.0 -->
+        <script src="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
+            kr-public-key="<?php
+                            require_once __DIR__ . '/../../config/izipay.php';
+                            $config = getIzipayConfig();
+                            echo $config['publicKey'];
+                            ?>"
+            kr-post-url-success="<?= url('/pago/confirmacion') ?>"
+            kr-post-url-refused="<?= url('/pago/fallido') ?>">
+        </script>
+
+        <!-- Tema clásico de Izipay -->
+        <script src="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic.js"></script>
+    <?php endif; ?>
+
+
 </head>
 
 <body class="hold-transition layout-top-nav">
@@ -222,24 +248,26 @@
 
 <style>
     .brand-logo {
-    height: 40px; /* Ajusta la altura según necesites */
-    width: auto;
-    max-width: 200px; /* Ancho máximo para evitar que sea muy grande */
-}
-
-/* Para pantallas pequeñas */
-@media (max-width: 768px) {
-    .brand-logo {
-        height: 35px;
-        max-width: 150px;
+        height: 40px;
+        /* Ajusta la altura según necesites */
+        width: auto;
+        max-width: 200px;
+        /* Ancho máximo para evitar que sea muy grande */
     }
-}
 
-/* Si quieres que el logo sea más pequeño en dispositivos muy pequeños */
-@media (max-width: 480px) {
-    .brand-logo {
-        height: 30px;
-        max-width: 120px;
+    /* Para pantallas pequeñas */
+    @media (max-width: 768px) {
+        .brand-logo {
+            height: 35px;
+            max-width: 150px;
+        }
     }
-}
+
+    /* Si quieres que el logo sea más pequeño en dispositivos muy pequeños */
+    @media (max-width: 480px) {
+        .brand-logo {
+            height: 30px;
+            max-width: 120px;
+        }
+    }
 </style>

@@ -1,5 +1,5 @@
 <?php
-// services/IzipayService.php
+// services/IzipayService.php - NUEVA IMPLEMENTACIÓN CON API REST V4.0
 
 require_once __DIR__ . '/../config/izipay.php';
 
@@ -11,194 +11,150 @@ class IzipayService {
     }
     
     /**
-     * Crea una sesión de pago con tarjeta - ADAPTADO PARA MICUENTAWEB
+     * Crea un FormToken para el pago - NUEVA IMPLEMENTACIÓN REST V4.0
      */
-    public function createCardPaymentSession($amount, $orderId, $userEmail, $description = '') {
+    public function createPaymentSession($amount, $orderId, $userEmail, $description = '') {
+        error_log("=== IZIPAY REST API V4.0 SESSION ===");
+        error_log("Amount: $amount");
+        error_log("Order ID: $orderId");
+        error_log("User Email: $userEmail");
+        
         // Convertir a céntimos
         $amountCents = (int)($amount * 100);
         
-        // Preparar datos para el formulario de micuentaweb
-        $formData = [
-            'vads_site_id' => $this->config['merchantId'],
-            'vads_amount' => $amountCents,
-            'vads_currency' => '604', // PEN currency code
-            'vads_trans_date' => gmdate('YmdHis'),
-            'vads_trans_id' => substr(str_pad($orderId, 6, '0', STR_PAD_LEFT), -6),
-            'vads_order_id' => $orderId,
-            'vads_payment_config' => 'SINGLE',
-            'vads_page_action' => 'PAYMENT',
-            'vads_action_mode' => 'INTERACTIVE',
-            'vads_version' => 'V2',
-            'vads_cust_email' => $userEmail,
-            'vads_order_info' => $description,
-            'vads_url_return' => $this->getCallbackUrl(IZIPAY_RETURN_URL),
-            'vads_url_cancel' => $this->getCallbackUrl(IZIPAY_CANCEL_URL),
-            'vads_url_check' => $this->getCallbackUrl(IZIPAY_NOTIFICATION_URL),
-            'vads_capture_delay' => '0',
-            'vads_validation_mode' => '0'
+        // Preparar datos para la API REST
+        $requestData = [
+            'amount' => $amountCents,
+            'currency' => 'PEN',
+            'orderId' => $orderId,
+            'customer' => [
+                'email' => $userEmail
+            ],
+            'metadata' => [
+                'description' => $description
+            ]
         ];
         
-        // Generar la firma
-        $signature = $this->generateSignature($formData);
-        $formData['signature'] = $signature;
+        error_log("Request data: " . json_encode($requestData));
         
-        // Crear URL de redirección
-        $redirectUrl = $this->config['endpointUrl'] . '?' . http_build_query($formData);
+        // Hacer petición a la API REST
+        $response = $this->makeApiRequest($requestData);
         
-        return [
-            'sessionId' => $orderId,
-            'redirectUrl' => $redirectUrl,
-            'formData' => $formData
-        ];
-    }
-    
-    /**
-     * Crea una sesión de pago con Yape - MISMO FLUJO
-     */
-    public function createYapePaymentSession($amount, $orderId, $userEmail, $description = '') {
-        // Para Yape, usamos el mismo flujo que tarjeta en micuentaweb
-        // La diferencia se maneja en el lado del usuario final
-        return $this->createCardPaymentSession($amount, $orderId, $userEmail, $description);
-    }
-    
-    /**
-     * Verifica el estado de un pago - ADAPTADO
-     */
-    public function checkPaymentStatus($orderId) {
-        // Para micuentaweb, verificamos a través de los parámetros de retorno
-        // Esta función se llama cuando el usuario regresa del pago
-        
-        if (isset($_GET['vads_trans_status'])) {
-            $status = $_GET['vads_trans_status'];
-            $transactionId = $_GET['vads_trans_uuid'] ?? $_GET['vads_trans_id'] ?? null;
-            
-            // Verificar la firma de la respuesta
-            if (!$this->verifyReturnSignature($_GET)) {
-                throw new Exception('Firma de retorno inválida');
-            }
-            
-            // Mapear estados de micuentaweb a nuestros estados
-            switch ($status) {
-                case 'AUTHORISED':
-                case 'CAPTURED':
-                    return [
-                        'status' => 'COMPLETED',
-                        'transactionId' => $transactionId,
-                        'orderId' => $orderId
-                    ];
-                case 'REFUSED':
-                case 'CANCELLED':
-                    return [
-                        'status' => 'FAILED',
-                        'transactionId' => $transactionId,
-                        'orderId' => $orderId,
-                        'errorMessage' => 'Pago rechazado o cancelado'
-                    ];
-                case 'WAITING_AUTHORISATION':
-                case 'UNDER_VERIFICATION':
-                    return [
-                        'status' => 'PROCESSING',
-                        'transactionId' => $transactionId,
-                        'orderId' => $orderId
-                    ];
-                default:
-                    return [
-                        'status' => 'UNKNOWN',
-                        'transactionId' => $transactionId,
-                        'orderId' => $orderId
-                    ];
-            }
+        if (!$response || !isset($response['answer']['formToken'])) {
+            throw new Exception('Error al crear FormToken: ' . ($response['answer']['errorMessage'] ?? 'Respuesta inválida'));
         }
         
+        $formToken = $response['answer']['formToken'];
+        
+        error_log("FormToken generado: $formToken");
+        error_log("=== END IZIPAY SESSION ===");
+        
         return [
-            'status' => 'PENDING',
+            'formToken' => $formToken,
+            'publicKey' => $this->config['publicKey'],
+            'clientEndpoint' => $this->config['clientEndpoint'],
             'orderId' => $orderId
         ];
     }
     
     /**
-     * Obtiene la URL completa para callbacks
+     * Hace petición a la API REST de Izipay
      */
-    private function getCallbackUrl($path) {
-        $isProduction = isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] === 'erophia.com';
+    private function makeApiRequest($data) {
+        $url = $this->config['apiEndpoint'];
+        $auth = base64_encode($this->config['username'] . ':' . $this->config['password']);
         
-        if ($isProduction) {
-            return 'https://erophia.com/public' . $path;
-        } else {
-            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-            $host = $_SERVER['HTTP_HOST'];
-            $basePath = dirname($_SERVER['SCRIPT_NAME']);
-            return $protocol . $host . $basePath . $path;
+        $headers = [
+            'Authorization: Basic ' . $auth,
+            'Content-Type: application/json',
+            'Accept: application/json'
+        ];
+        
+        error_log("API URL: $url");
+        error_log("Auth header: Basic $auth");
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+        
+        error_log("HTTP Code: $httpCode");
+        error_log("Response: $response");
+        
+        if ($error) {
+            throw new Exception("Error CURL: $error");
         }
+        
+        if ($httpCode !== 200) {
+            throw new Exception("Error HTTP $httpCode: $response");
+        }
+        
+        $decoded = json_decode($response, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception("Error decodificando JSON: " . json_last_error_msg());
+        }
+        
+        return $decoded;
     }
     
     /**
-     * Genera la firma para micuentaweb
+     * Verifica la firma de un hash (para IPN)
      */
-    private function generateSignature($formData) {
-        // Ordenar los campos alfabéticamente
-        ksort($formData);
+    public function verifyHash($hash, $data) {
+        $calculatedHash = hash_hmac('sha256', $data, $this->config['hmacKey']);
+        return hash_equals($calculatedHash, $hash);
+    }
+    
+    /**
+     * Procesa la notificación IPN - ADAPTADO PARA REST V4.0
+     */
+    public function processIpnNotification($requestBody, $headers) {
+        error_log("=== IPN NOTIFICATION V4.0 ===");
+        error_log("Request body: $requestBody");
+        error_log("Headers: " . print_r($headers, true));
         
-        // Construir la cadena de firma
-        $signatureString = '';
-        foreach ($formData as $key => $value) {
-            if (strpos($key, 'vads_') === 0) {
-                $signatureString .= $value . '+';
+        // Verificar que tenemos datos
+        if (empty($requestBody)) {
+            throw new Exception('IPN body vacío');
+        }
+        
+        // Decodificar datos JSON
+        $data = json_decode($requestBody, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('IPN JSON inválido');
+        }
+        
+        // Verificar firma si está presente
+        if (isset($headers['kr-hash'])) {
+            if (!$this->verifyHash($headers['kr-hash'], $requestBody)) {
+                throw new Exception('Firma IPN inválida');
             }
         }
         
-        // Añadir la clave secreta
-        $signatureString .= $this->config['secretKey'];
+        // Extraer información de la transacción
+        $orderDetails = $data['orderDetails'] ?? [];
+        $transactionDetails = $data['transactionDetails'] ?? [];
         
-        // Generar SHA-1
-        return sha1($signatureString);
-    }
-    
-    /**
-     * Verifica la firma de retorno
-     */
-    private function verifyReturnSignature($data) {
-        if (!isset($data['signature'])) {
-            return false;
-        }
-        
-        $receivedSignature = $data['signature'];
-        unset($data['signature']);
-        
-        $calculatedSignature = $this->generateSignature($data);
-        
-        return hash_equals($calculatedSignature, $receivedSignature);
-    }
-    
-    /**
-     * Procesa la notificación IPN - ADAPTADO PARA MICUENTAWEB
-     */
-    public function processIpnNotification($requestBody, $headers) {
-        // Para micuentaweb, los datos vienen en POST o GET
-        $data = $_POST ?: $_GET;
-        
-        error_log("IPN Data: " . print_r($data, true));
-        
-        if (empty($data) || !isset($data['vads_trans_status'])) {
-            throw new Exception('Datos IPN inválidos');
-        }
-        
-        // Verificar la firma
-        if (!$this->verifyReturnSignature($data)) {
-            throw new Exception('Firma IPN inválida');
-        }
-        
-        // Extraer información relevante
-        $status = $data['vads_trans_status'];
-        $orderId = $data['vads_order_id'] ?? $data['vads_trans_id'];
-        $transactionId = $data['vads_trans_uuid'] ?? $data['vads_trans_id'];
+        $orderId = $orderDetails['orderId'] ?? null;
+        $status = $transactionDetails['cardDetails']['effectiveStrongAuthentication'] ?? 
+                  $data['orderStatus'] ?? 'UNKNOWN';
         
         // Mapear estado
         switch ($status) {
+            case 'PAID':
             case 'AUTHORISED':
-            case 'CAPTURED':
                 $mappedStatus = 'COMPLETED';
                 break;
+            case 'UNPAID':
             case 'REFUSED':
             case 'CANCELLED':
                 $mappedStatus = 'FAILED';
@@ -211,12 +167,38 @@ class IzipayService {
                 $mappedStatus = 'FAILED';
         }
         
+        error_log("=== END IPN ===");
+        
         return [
             'status' => $mappedStatus,
             'orderId' => $orderId,
-            'sessionId' => $orderId,
-            'transactionId' => $transactionId,
-            'errorMessage' => $mappedStatus === 'FAILED' ? 'Pago rechazado' : null
+            'transactionDetails' => $transactionDetails,
+            'orderDetails' => $orderDetails
+        ];
+    }
+    
+    /**
+     * Métodos de compatibilidad con el código existente
+     */
+    public function createCardPaymentSession($amount, $orderId, $userEmail, $description = '') {
+        return $this->createPaymentSession($amount, $orderId, $userEmail, $description);
+    }
+    
+    public function createYapePaymentSession($amount, $orderId, $userEmail, $description = '') {
+        return $this->createPaymentSession($amount, $orderId, $userEmail, $description);
+    }
+    
+    /**
+     * Verifica el estado del pago desde los parámetros de retorno
+     */
+    public function checkPaymentStatus($orderId) {
+        // En la nueva implementación, el estado se verifica por IPN
+        // o por consulta directa a la API si es necesario
+        
+        // Por ahora, returnear estado pendiente
+        return [
+            'status' => 'PENDING',
+            'orderId' => $orderId
         ];
     }
 }
