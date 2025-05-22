@@ -10,35 +10,39 @@ class Payment {
     public static function getAll($limit = 100, $offset = 0, $filters = []) {
         $conn = getDbConnection();
         
-        $sql = "SELECT * FROM payments";
+        $sql = "SELECT p.*, u.email as user_email, u.phone as user_phone, pl.name as plan_name 
+                FROM payments p
+                LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN plans pl ON p.plan_id = pl.id";
         $params = [];
         $whereConditions = [];
         
         // Aplicar filtros
         if (!empty($filters)) {
             if (isset($filters['payment_status'])) {
-                $whereConditions[] = "payment_status = ?";
+                $whereConditions[] = "p.payment_status = ?";
                 $params[] = $filters['payment_status'];
             }
             
             if (isset($filters['payment_method'])) {
-                $whereConditions[] = "payment_method = ?";
+                $whereConditions[] = "p.payment_method = ?";
                 $params[] = $filters['payment_method'];
             }
             
             if (isset($filters['search'])) {
-                $whereConditions[] = "(transaction_id LIKE ? OR order_id LIKE ?)";
+                $whereConditions[] = "(p.transaction_id LIKE ? OR p.order_id LIKE ? OR u.email LIKE ?)";
+                $params[] = "%{$filters['search']}%";
                 $params[] = "%{$filters['search']}%";
                 $params[] = "%{$filters['search']}%";
             }
             
             if (isset($filters['start_date'])) {
-                $whereConditions[] = "created_at >= ?";
+                $whereConditions[] = "p.created_at >= ?";
                 $params[] = $filters['start_date'];
             }
             
             if (isset($filters['end_date'])) {
-                $whereConditions[] = "created_at <= ?";
+                $whereConditions[] = "p.created_at <= ?";
                 $params[] = $filters['end_date'];
             }
         }
@@ -48,7 +52,7 @@ class Payment {
             $sql .= " WHERE " . implode(' AND ', $whereConditions);
         }
         
-        $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        $sql .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";
         $params[] = $limit;
         $params[] = $offset;
         
@@ -79,23 +83,39 @@ class Payment {
     }
     
     /**
+     * Obtiene un pago por order_id
+     */
+    public static function getByOrderId($orderId) {
+        $conn = getDbConnection();
+        $stmt = $conn->prepare("SELECT * FROM payments WHERE order_id = ?");
+        $stmt->execute([$orderId]);
+        return $stmt->fetch();
+    }
+    
+    /**
      * Obtiene pagos de un usuario
      */
     public static function getByUserId($userId) {
         $conn = getDbConnection();
-        $stmt = $conn->prepare("SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC");
+        $stmt = $conn->prepare("
+            SELECT p.*, pl.name as plan_name 
+            FROM payments p
+            LEFT JOIN plans pl ON p.plan_id = pl.id
+            WHERE p.user_id = ? 
+            ORDER BY p.created_at DESC
+        ");
         $stmt->execute([$userId]);
         return $stmt->fetchAll();
     }
     
     /**
-     * Crea un nuevo pago
+     * Crea un nuevo pago - MEJORADO
      */
     public static function create($paymentData) {
         $conn = getDbConnection();
         
-        $sql = "INSERT INTO payments (user_id, plan_id, amount, currency, payment_method, payment_status, order_id) 
-                VALUES (:user_id, :plan_id, :amount, :currency, :payment_method, :payment_status, :order_id)";
+        $sql = "INSERT INTO payments (user_id, plan_id, amount, currency, payment_method, payment_status, order_id, created_at) 
+                VALUES (:user_id, :plan_id, :amount, :currency, :payment_method, :payment_status, :order_id, NOW())";
         
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':user_id', $paymentData['user_id']);
@@ -125,6 +145,8 @@ class Payment {
             $params[] = $value;
         }
         
+        // Agregar updated_at automáticamente
+        $setFields[] = "updated_at = NOW()";
         $params[] = $id;
         
         $sql = "UPDATE payments SET " . implode(', ', $setFields) . " WHERE id = ?";
@@ -139,35 +161,36 @@ class Payment {
     public static function count($filters = []) {
         $conn = getDbConnection();
         
-        $sql = "SELECT COUNT(*) as total FROM payments";
+        $sql = "SELECT COUNT(*) as total FROM payments p LEFT JOIN users u ON p.user_id = u.id";
         $params = [];
         $whereConditions = [];
         
         // Aplicar filtros
         if (!empty($filters)) {
             if (isset($filters['payment_status'])) {
-                $whereConditions[] = "payment_status = ?";
+                $whereConditions[] = "p.payment_status = ?";
                 $params[] = $filters['payment_status'];
             }
             
             if (isset($filters['payment_method'])) {
-                $whereConditions[] = "payment_method = ?";
+                $whereConditions[] = "p.payment_method = ?";
                 $params[] = $filters['payment_method'];
             }
             
             if (isset($filters['search'])) {
-                $whereConditions[] = "(transaction_id LIKE ? OR order_id LIKE ?)";
+                $whereConditions[] = "(p.transaction_id LIKE ? OR p.order_id LIKE ? OR u.email LIKE ?)";
+                $params[] = "%{$filters['search']}%";
                 $params[] = "%{$filters['search']}%";
                 $params[] = "%{$filters['search']}%";
             }
             
             if (isset($filters['start_date'])) {
-                $whereConditions[] = "created_at >= ?";
+                $whereConditions[] = "p.created_at >= ?";
                 $params[] = $filters['start_date'];
             }
             
             if (isset($filters['end_date'])) {
-                $whereConditions[] = "created_at <= ?";
+                $whereConditions[] = "p.created_at <= ?";
                 $params[] = $filters['end_date'];
             }
         }
@@ -185,28 +208,16 @@ class Payment {
     }
     
     /**
-     * Obtiene el monto total de pagos
+     * Obtiene estadísticas de pagos
      */
-    public static function getTotalAmount($filters = []) {
+    public static function getStats($filters = []) {
         $conn = getDbConnection();
         
-        $sql = "SELECT SUM(amount) as total FROM payments WHERE payment_status = 'completed'";
-        $params = [];
         $whereConditions = [];
+        $params = [];
         
-        // Aplicar filtros adicionales
+        // Aplicar filtros de fecha si existen
         if (!empty($filters)) {
-            if (isset($filters['payment_method'])) {
-                $whereConditions[] = "payment_method = ?";
-                $params[] = $filters['payment_method'];
-            }
-            
-            if (isset($filters['search'])) {
-                $whereConditions[] = "(transaction_id LIKE ? OR order_id LIKE ?)";
-                $params[] = "%{$filters['search']}%";
-                $params[] = "%{$filters['search']}%";
-            }
-            
             if (isset($filters['start_date'])) {
                 $whereConditions[] = "created_at >= ?";
                 $params[] = $filters['start_date'];
@@ -218,16 +229,30 @@ class Payment {
             }
         }
         
-        // Construir condición WHERE
-        if (!empty($whereConditions)) {
-            $sql .= " AND " . implode(' AND ', $whereConditions);
-        }
+        $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+        
+        // Consulta para obtener estadísticas
+        $sql = "SELECT 
+                    SUM(CASE WHEN payment_status = 'completed' THEN amount ELSE 0 END) as total_amount,
+                    COUNT(CASE WHEN payment_status = 'completed' THEN 1 END) as completed_count,
+                    COUNT(CASE WHEN payment_status = 'pending' THEN 1 END) as pending_count,
+                    COUNT(CASE WHEN payment_status = 'processing' THEN 1 END) as processing_count,
+                    COUNT(CASE WHEN payment_status = 'failed' THEN 1 END) as failed_count,
+                    COUNT(*) as total_count
+                FROM payments $whereClause";
         
         $stmt = $conn->prepare($sql);
         $stmt->execute($params);
         $result = $stmt->fetch();
         
-        return $result['total'] ?? 0;
+        return [
+            'total_amount' => floatval($result['total_amount'] ?? 0),
+            'completed_count' => intval($result['completed_count'] ?? 0),
+            'pending_count' => intval($result['pending_count'] ?? 0),
+            'processing_count' => intval($result['processing_count'] ?? 0),
+            'failed_count' => intval($result['failed_count'] ?? 0),
+            'total_count' => intval($result['total_count'] ?? 0)
+        ];
     }
     
     /**

@@ -2,19 +2,21 @@
 // config/izipay.php
 
 // Entorno (TEST o PRODUCTION)
-define('IZIPAY_ENVIRONMENT', 'TEST');
+define('IZIPAY_ENVIRONMENT', 'TEST'); // ← Mantener en TEST para pruebas
 
-// Credenciales para entorno de pruebas
-define('IZIPAY_TEST_MERCHANT_ID', 'TEST_MERCHANT_ID');
-define('IZIPAY_TEST_API_KEY', 'TEST_API_KEY');
-define('IZIPAY_TEST_SECRET_KEY', 'TEST_SECRET_KEY');
-define('IZIPAY_TEST_ENDPOINT', 'https://api.sandbox.izipay.pe/api/v1/');
+// Credenciales para entorno de pruebas - CONFIGURADAS
+define('IZIPAY_TEST_MERCHANT_ID', '13448745');
+define('IZIPAY_TEST_API_KEY', '13448745:testpublickey_XxLY9Q0zcRG18WNjf5ah1GUhhlliqNRicaaJiWhXDp2Tb');
+define('IZIPAY_TEST_SECRET_KEY', 'testpassword_9Fjd8w0VmP0lMLkWCIOOCEyTmQl2NBiH1ilk98X6E9b5q');
+define('IZIPAY_TEST_HMAC_KEY', '1WmjIjvBCSHmnfA6GFmZrqsN9wUROW4DN2YRnk0yMadu9');
+define('IZIPAY_TEST_ENDPOINT', 'https://api.micuentaweb.pe/vads-payment/');
 
-// Credenciales para entorno de producción
-define('IZIPAY_PRODUCTION_MERCHANT_ID', 'PRODUCTION_MERCHANT_ID');
-define('IZIPAY_PRODUCTION_API_KEY', 'PRODUCTION_API_KEY');
-define('IZIPAY_PRODUCTION_SECRET_KEY', 'PRODUCTION_SECRET_KEY');
-define('IZIPAY_PRODUCTION_ENDPOINT', 'https://api.izipay.pe/api/v1/');
+// Credenciales para entorno de producción - PARA MÁS ADELANTE
+define('IZIPAY_PRODUCTION_MERCHANT_ID', '13448745');
+define('IZIPAY_PRODUCTION_API_KEY', 'CAMBIAR_POR_CLAVE_PUBLICA_PRODUCCION');
+define('IZIPAY_PRODUCTION_SECRET_KEY', 'CAMBIAR_POR_CONTRASEÑA_PRODUCCION');
+define('IZIPAY_PRODUCTION_HMAC_KEY', 'CAMBIAR_POR_HMAC_PRODUCCION');
+define('IZIPAY_PRODUCTION_ENDPOINT', 'https://api.micuentaweb.pe/vads-payment/');
 
 // URLs de retorno
 define('IZIPAY_RETURN_URL', '/pago/confirmacion');
@@ -28,6 +30,7 @@ function getIzipayConfig() {
             'merchantId' => IZIPAY_PRODUCTION_MERCHANT_ID,
             'apiKey' => IZIPAY_PRODUCTION_API_KEY,
             'secretKey' => IZIPAY_PRODUCTION_SECRET_KEY,
+            'hmacKey' => IZIPAY_PRODUCTION_HMAC_KEY,
             'endpointUrl' => IZIPAY_PRODUCTION_ENDPOINT
         ];
     } else {
@@ -35,6 +38,7 @@ function getIzipayConfig() {
             'merchantId' => IZIPAY_TEST_MERCHANT_ID,
             'apiKey' => IZIPAY_TEST_API_KEY,
             'secretKey' => IZIPAY_TEST_SECRET_KEY,
+            'hmacKey' => IZIPAY_TEST_HMAC_KEY,
             'endpointUrl' => IZIPAY_TEST_ENDPOINT
         ];
     }

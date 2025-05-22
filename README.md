@@ -98,3 +98,6 @@ Iniciar sesión como visitante:
 
 Email: cliente@gmail.com
 Contraseña: password
+
+# añadir a la base de datos
+ALTER TABLE payments ADD COLUMN order_id VARCHAR(100) AFTER transaction_id;

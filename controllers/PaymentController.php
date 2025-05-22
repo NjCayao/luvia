@@ -5,6 +5,7 @@ require_once __DIR__ . '/../services/IzipayService.php';
 require_once __DIR__ . '/../models/Plan.php';
 require_once __DIR__ . '/../models/Payment.php';
 require_once __DIR__ . '/../models/Subscription.php';
+require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../includes/auth.php';
 
 class PaymentController {
@@ -12,15 +13,6 @@ class PaymentController {
     
     public function __construct() {
         $this->izipayService = new IzipayService();
-    }
-    
-    // Mostrar planes disponibles
-    public function showPlans() {
-        $userType = $_SESSION['user_type'] ?? 'visitor';
-        $plans = Plan::getByUserType($userType);
-        
-        // Renderizar vista
-        require_once __DIR__ . '/../views/payment/plans.php';
     }
     
     // Mostrar página de checkout
@@ -32,22 +24,35 @@ class PaymentController {
         
         if (!$plan) {
             // Plan no válido
-            header('Location: /pago/planes?error=plan_no_valido');
+            setFlashMessage('danger', 'Plan no válido');
+            redirect('/pago/planes');
             exit;
         }
         
         // Obtener datos del usuario
         $user = User::getById($_SESSION['user_id']);
         
-        // Renderizar vista
-        require_once __DIR__ . '/../views/payment/checkout.php';
+        $pageTitle = 'Checkout - ' . $plan['name'];
+        $pageHeader = 'Realizar Pago';
+        
+        // Renderizar vista usando el layout principal
+        $viewFile = __DIR__ . '/../views/payment/checkout.php';
+        require_once __DIR__ . '/../views/layouts/main.php';
     }
     
     // Procesar pago con tarjeta
     public function processCardPayment() {
+        header('Content-Type: application/json');
+        
         // Verificar si hay un usuario logueado
         if (!isLoggedIn()) {
             echo json_encode(['error' => 'Usuario no autenticado']);
+            exit;
+        }
+        
+        // Verificar token CSRF
+        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+            echo json_encode(['error' => 'Token CSRF inválido']);
             exit;
         }
         
@@ -65,8 +70,8 @@ class PaymentController {
         // Obtener usuario
         $user = User::getById($_SESSION['user_id']);
         
-        // Generar ID de orden
-        $orderId = 'ORD-' . time() . '-' . $user['id'];
+        // Generar ID de orden único
+        $orderId = 'LUV-' . time() . '-' . $user['id'] . '-' . rand(1000, 9999);
         
         try {
             // Crear registro de pago
@@ -88,16 +93,16 @@ class PaymentController {
                 'Plan ' . $plan['name'] . ' - ' . $plan['duration'] . ' días'
             );
             
-            // Actualizar pago con ID de sesión
+            // Actualizar pago con ID de sesión (order_id para micuentaweb)
             Payment::update($paymentId, [
-                'izipay_session_id' => $session['sessionId']
+                'izipay_session_id' => $orderId
             ]);
             
             // Devolver respuesta
             echo json_encode([
                 'success' => true,
-                'redirect_url' => $session['redirectUrl'],
-                'session_id' => $session['sessionId']
+                'redirect_url' => $session['redirectUrl'] ?? null,
+                'session_id' => $orderId
             ]);
             
         } catch (Exception $e) {
@@ -124,10 +129,16 @@ class PaymentController {
     
     // Procesar pago con Yape
     public function processYapePayment() {
-        // Implementación similar a processCardPayment
-        // pero usando createYapePaymentSession
+        header('Content-Type: application/json');
+        
         if (!isLoggedIn()) {
             echo json_encode(['error' => 'Usuario no autenticado']);
+            exit;
+        }
+        
+        // Verificar token CSRF
+        if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+            echo json_encode(['error' => 'Token CSRF inválido']);
             exit;
         }
         
@@ -145,8 +156,8 @@ class PaymentController {
         // Obtener usuario
         $user = User::getById($_SESSION['user_id']);
         
-        // Generar ID de orden
-        $orderId = 'ORD-' . time() . '-' . $user['id'];
+        // Generar ID de orden único
+        $orderId = 'LUV-YAPE-' . time() . '-' . $user['id'] . '-' . rand(1000, 9999);
         
         try {
             // Crear registro de pago
@@ -155,7 +166,7 @@ class PaymentController {
                 'plan_id' => $planId,
                 'amount' => $plan['price'],
                 'currency' => 'PEN',
-                'payment_method' => 'card',
+                'payment_method' => 'yape',
                 'payment_status' => 'pending',
                 'order_id' => $orderId
             ]);
@@ -168,21 +179,21 @@ class PaymentController {
                 'Plan ' . $plan['name'] . ' - ' . $plan['duration'] . ' días'
             );
             
-            // Actualizar pago con ID de sesión
+            // Actualizar pago con ID de sesión (order_id para micuentaweb)  
             Payment::update($paymentId, [
-                'izipay_session_id' => $session['sessionId']
+                'izipay_session_id' => $orderId
             ]);
             
             // Devolver respuesta
             echo json_encode([
                 'success' => true,
-                'redirect_url' => $session['redirectUrl'],
-                'session_id' => $session['sessionId']
+                'redirect_url' => $session['redirectUrl'] ?? null,
+                'session_id' => $orderId
             ]);
             
         } catch (Exception $e) {
             // Log del error
-            error_log('Error en pago con tarjeta: ' . $e->getMessage());
+            error_log('Error en pago con Yape: ' . $e->getMessage());
             
             // Actualizar pago si existe
             if (isset($paymentId)) {
@@ -201,28 +212,35 @@ class PaymentController {
         exit;
     }
     
-    // Manejar confirmación de pago
+    // Manejar confirmación de pago - ADAPTADO PARA MICUENTAWEB
     public function confirmation() {
-        $sessionId = $_GET['session_id'] ?? '';
+        // Para micuentaweb, los parámetros vienen en la URL de retorno
+        $orderId = $_GET['vads_order_id'] ?? $_GET['vads_trans_id'] ?? '';
         
-        if (empty($sessionId)) {
-            header('Location: /pago/error');
+        if (empty($orderId)) {
+            setFlashMessage('danger', 'Información de pago no válida');
+            redirect('/pago/planes');
             exit;
         }
         
         try {
-            // Verificar estado del pago
-            $paymentStatus = $this->izipayService->checkPaymentStatus($sessionId);
+            // Verificar estado del pago usando los parámetros de retorno
+            $paymentStatus = $this->izipayService->checkPaymentStatus($orderId);
             
-            // Obtener pago
-            $payment = Payment::getBySessionId($sessionId);
+            // Obtener pago de la base de datos
+            $payment = Payment::getByOrderId($orderId);
             
             if (!$payment) {
-                throw new Exception('Pago no encontrado');
+                throw new Exception('Pago no encontrado en base de datos');
             }
             
-            // Actualizar estado según respuesta
-            if ($paymentStatus['status'] === 'COMPLETED') {
+            // Log para debugging
+            error_log("Payment Status Response: " . json_encode($paymentStatus));
+            
+            // Procesar según el estado
+            $status = $paymentStatus['status'] ?? 'UNKNOWN';
+            
+            if (in_array($status, ['COMPLETED', 'PAID', 'SUCCESSFUL', 'SUCCESS'])) {
                 // Pago exitoso
                 Payment::update($payment['id'], [
                     'payment_status' => 'completed',
@@ -233,26 +251,30 @@ class PaymentController {
                 $this->activateSubscription($payment['user_id'], $payment['plan_id'], $payment['id']);
                 
                 // Redirigir a éxito
-                header('Location: /pago/exito');
+                setFlashMessage('success', '¡Pago procesado exitosamente!');
+                redirect('/pago/exito');
                 
-            } else if ($paymentStatus['status'] === 'FAILED') {
+            } else if (in_array($status, ['FAILED', 'CANCELLED', 'REJECTED', 'ERROR'])) {
                 // Pago fallido
+                $errorMessage = $paymentStatus['errorMessage'] ?? 'Pago rechazado';
+                
                 Payment::update($payment['id'], [
                     'payment_status' => 'failed',
-                    'error_message' => $paymentStatus['errorMessage'] ?? 'Pago rechazado'
+                    'error_message' => $errorMessage
                 ]);
                 
                 // Redirigir a fallo
-                header('Location: /pago/fallido?razon=' . urlencode($paymentStatus['errorMessage'] ?? 'Pago rechazado'));
+                redirect('/pago/fallido?razon=' . urlencode($errorMessage));
                 
             } else {
-                // Otro estado
+                // Estado pendiente o en proceso
                 Payment::update($payment['id'], [
                     'payment_status' => 'processing'
                 ]);
                 
-                // Redirigir a procesando
-                header('Location: /pago/procesando');
+                // Redirigir a página de espera
+                setFlashMessage('info', 'Tu pago está siendo procesado. Te notificaremos cuando esté listo.');
+                redirect('/usuario/dashboard');
             }
             
         } catch (Exception $e) {
@@ -260,45 +282,76 @@ class PaymentController {
             error_log('Error en confirmación de pago: ' . $e->getMessage());
             
             // Redirigir a error
-            header('Location: /pago/error?mensaje=' . urlencode('Error al verificar el pago'));
+            setFlashMessage('danger', 'Error al verificar el pago. Si el dinero fue descontado, será reembolsado automáticamente.');
+            redirect('/usuario/dashboard');
         }
         
         exit;
     }
     
-    // Manejar notificaciones IPN
+    // Manejar notificaciones IPN - MEJORADO
     public function ipnHandler() {
+        // Log de la petición IPN
+        error_log("IPN Handler Called");
+        error_log("Request Method: " . $_SERVER['REQUEST_METHOD']);
+        error_log("Content Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'Not set'));
+        
         try {
             // Obtener datos de la petición
             $requestBody = file_get_contents('php://input');
             $headers = getallheaders();
             
+            error_log("IPN Raw Body: " . $requestBody);
+            error_log("IPN Headers: " . print_r($headers, true));
+            
             // Procesar notificación
             $notification = $this->izipayService->processIpnNotification($requestBody, $headers);
             
-            // Buscar pago
-            $payment = Payment::getBySessionId($notification['sessionId']);
+            error_log("IPN Processed Notification: " . json_encode($notification));
+            
+            // Buscar pago por session ID o order ID
+            $sessionId = $notification['sessionId'] ?? $notification['session_id'] ?? null;
+            $orderId = $notification['orderId'] ?? $notification['order_id'] ?? null;
+            
+            $payment = null;
+            
+            if ($sessionId) {
+                $payment = Payment::getBySessionId($sessionId);
+            }
+            
+            if (!$payment && $orderId) {
+                // Buscar por order_id como fallback
+                $conn = getDbConnection();
+                $stmt = $conn->prepare("SELECT * FROM payments WHERE order_id = ?");
+                $stmt->execute([$orderId]);
+                $payment = $stmt->fetch();
+            }
             
             if (!$payment) {
+                error_log("IPN: Pago no encontrado - SessionID: $sessionId, OrderID: $orderId");
                 throw new Exception('Pago no encontrado');
             }
             
-            // Actualizar estado
-            if ($notification['status'] === 'COMPLETED') {
+            // Mapear estado
+            $status = $notification['status'] ?? $notification['paymentStatus'] ?? 'UNKNOWN';
+            
+            if (in_array($status, ['COMPLETED', 'PAID', 'SUCCESSFUL', 'SUCCESS'])) {
                 // Pago exitoso
                 Payment::update($payment['id'], [
                     'payment_status' => 'completed',
-                    'transaction_id' => $notification['transactionId'] ?? null
+                    'transaction_id' => $notification['transactionId'] ?? $notification['id'] ?? null
                 ]);
                 
-                // Activar suscripción
-                $this->activateSubscription($payment['user_id'], $payment['plan_id'], $payment['id']);
+                // Activar suscripción solo si no está ya activa
+                if ($payment['payment_status'] !== 'completed') {
+                    $this->activateSubscription($payment['user_id'], $payment['plan_id'], $payment['id']);
+                }
                 
-            } else if ($notification['status'] === 'FAILED') {
+            } else if (in_array($status, ['FAILED', 'CANCELLED', 'REJECTED', 'ERROR'])) {
                 // Pago fallido
                 Payment::update($payment['id'], [
                     'payment_status' => 'failed',
-                    'error_message' => $notification['errorMessage'] ?? 'Pago rechazado'
+                    'error_message' => $notification['errorMessage'] ?? $notification['message'] ?? 'Pago rechazado'
                 ]);
             }
             
@@ -309,6 +362,7 @@ class PaymentController {
         } catch (Exception $e) {
             // Log del error
             error_log('Error en notificación IPN: ' . $e->getMessage());
+            error_log('IPN Stack trace: ' . $e->getTraceAsString());
             
             // Responder error
             http_response_code(400);
@@ -320,19 +374,22 @@ class PaymentController {
     
     // Mostrar página de éxito
     public function success() {
-        require_once __DIR__ . '/../views/payment/success.php';
+        $pageTitle = 'Pago Exitoso';
+        $pageHeader = 'Pago Procesado';
+        
+        $viewFile = __DIR__ . '/../views/payment/success.php';
+        require_once __DIR__ . '/../views/layouts/main.php';
     }
     
     // Mostrar página de fallo
     public function failed() {
         $reason = $_GET['razon'] ?? 'Error desconocido';
-        require_once __DIR__ . '/../views/payment/failed.php';
-    }
-    
-    // Mostrar página de error
-    public function error() {
-        $message = $_GET['mensaje'] ?? 'Ha ocurrido un error inesperado';
-        require_once __DIR__ . '/../views/payment/error.php';
+        
+        $pageTitle = 'Pago Fallido';
+        $pageHeader = 'Error en el Pago';
+        
+        $viewFile = __DIR__ . '/../views/payment/failed.php';
+        require_once __DIR__ . '/../views/layouts/main.php';
     }
 
     /**
@@ -384,5 +441,8 @@ class PaymentController {
                 'auto_renew' => false
             ]);
         }
+        
+        // Log para confirmar activación
+        error_log("Subscription activated for user $userId with plan $planId");
     }
 }
