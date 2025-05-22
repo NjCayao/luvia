@@ -329,12 +329,12 @@
         object-fit: cover;
     }
 
-    .verified-badge {
+    /* .verified-badge {
         position: absolute;
         bottom: 10px;
         right: 10px;
         z-index: 20;
-    }
+    } */
 
     .gallery-container {
         height: 250px;

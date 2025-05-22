@@ -70,7 +70,7 @@
                         </li>
                         <li>
                             <i class="fas fa-clock text-primary mr-2"></i>
-                            Lunes a Viernes, 9:00 AM - 6:00 PM
+                            Lunes a Viernes, 9:00 AM - 5:00 PM
                         </li>
                     </ul>
                 </div>

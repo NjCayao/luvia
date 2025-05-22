@@ -1,5 +1,5 @@
 <!-- Main Footer -->
-<footer class="main-footer">
+<footer class="main-footer" style="background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(198,35,104,0.5) 100%); background-color: #1a1a2e;">
     <!-- Default to the left -->
     <div class="container">
         <div class="row">

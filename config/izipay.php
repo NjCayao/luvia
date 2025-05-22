@@ -40,9 +40,22 @@ function getIzipayConfig() {
     }
 }
 
-// Obtener URL completa
+// Obtener URL completa - Actualizada para HTTPS
 function getFullIzipayUrl($path) {
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-    $host = $_SERVER['HTTP_HOST'];
-    return $protocol . $host . $path;
+    // Detectar si estamos en producción
+    $isProduction = isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] === 'erophia.com';
+    
+    if ($isProduction) {
+        // En producción, siempre usar HTTPS
+        $protocol = 'https://';
+        $host = 'erophia.com';
+        $basePath = '/public';
+    } else {
+        // En desarrollo, detectar automáticamente
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+        $host = $_SERVER['HTTP_HOST'];
+        $basePath = dirname($_SERVER['SCRIPT_NAME']);
+    }
+    
+    return $protocol . $host . $basePath . $path;
 }

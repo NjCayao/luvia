@@ -2,8 +2,31 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
+    # Forzar HTTPS en producción
+    RewriteCond %{HTTP_HOST} ^erophia\.com$ [NC]
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+    
+    # Redireccionar www a non-www (opcional)
+    RewriteCond %{HTTP_HOST} ^www\.erophia\.com$ [NC]
+    RewriteRule ^(.*)$ https://erophia.com/$1 [R=301,L]
+    
     # Redirect all requests to index.php if file/directory doesn't exist
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Configuración de seguridad adicional
+<IfModule mod_headers.c>
+    # Forzar HTTPS durante 1 año
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
+    
+    # Prevenir ataques XSS
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Configurar CSP básico
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
 </IfModule>

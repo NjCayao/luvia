@@ -7,7 +7,7 @@
 const LuviaMediaProtection = (function() {
     // Configuración personalizable
     const config = {
-        watermarkText: 'Luvia.pe',
+        watermarkText: 'Erophia.com',
         photoContainerSelector: '.protected-photo-container',
         videoContainerSelector: '.protected-video-container',
         watermarkOpacity: 0.8,
@@ -37,7 +37,7 @@ const LuviaMediaProtection = (function() {
             addGeneralProtections();
         }
         
-        console.log('Luvia Media Protection inicializado');
+        console.log('Erophia Media Protection inicializado');
     }
     
     // Protección para fotos

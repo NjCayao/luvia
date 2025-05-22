@@ -1,0 +1,18 @@
+# .htaccess en la raíz del proyecto
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Forzar HTTPS en producción
+    RewriteCond %{HTTP_HOST} ^erophia\.com$ [NC]
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+    
+    # Redireccionar a public/ si no es un archivo o directorio existente
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ /public/$1 [L]
+    
+    # Si se accede directamente a la raíz, ir a public/
+    RewriteRule ^$ public/ [L]
+</IfModule>

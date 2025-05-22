@@ -42,7 +42,7 @@
                         <a href="<?= url('/categoria/female') ?>"
                             class="list-group-item list-group-item-action d-flex justify-content-between align-items-center
                                  <?= $gender === 'female' ? 'active' : '' ?>">
-                            Mujeres
+                            Erophia
                             <span class="badge badge-primary badge-pill">
                                 <?= Profile::countByGender('female') ?>
                             </span>
@@ -50,7 +50,7 @@
                         <a href="<?= url('/categoria/male') ?>"
                             class="list-group-item list-group-item-action d-flex justify-content-between align-items-center
                                  <?= $gender === 'male' ? 'active' : '' ?>">
-                            Hombres
+                            Erophian
                             <span class="badge badge-primary badge-pill">
                                 <?= Profile::countByGender('male') ?>
                             </span>
@@ -58,7 +58,7 @@
                         <a href="<?= url('/categoria/trans') ?>"
                             class="list-group-item list-group-item-action d-flex justify-content-between align-items-center
                                  <?= $gender === 'trans' ? 'active' : '' ?>">
-                            Trans
+                            Eromix
                             <span class="badge badge-primary badge-pill">
                                 <?= Profile::countByGender('trans') ?>
                             </span>
@@ -210,41 +210,6 @@
         </div>
     </div>
 </div>
-
-<!-- <style>
-    .profile-image {
-        position: relative;
-        height: 200px;
-        overflow: hidden;
-    }
-
-    .profile-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .verified-badge {
-        position: absolute;
-        bottom: 10px;
-        right: 10px;
-    }
-
-    .description {
-        height: 50px;
-        overflow: hidden;
-    }
-
-    .profile-card {
-        transition: all 0.3s ease;
-        border: 1px solid rgba(0, 0, 0, 0.125);
-    }
-
-    .profile-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
-</style> -->
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

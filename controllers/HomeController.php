@@ -93,13 +93,13 @@ class HomeController
         $totalPages = ceil($totalProfiles / $limit);
 
         // Obtener ciudades disponibles para el filtro
-       $provinces = Profile::getAvailableProvinces();
+        $provinces = Profile::getAvailableProvinces();
 
         // Título y encabezado según género
         $genderNames = [
-            'female' => 'Mujeres',
-            'male' => 'Hombres',
-            'trans' => 'Trans'
+            'female' => 'Erophia',
+            'male' => 'Erophian',
+            'trans' => 'Eromix'
         ];
 
         $pageTitle = $genderNames[$gender];
@@ -232,8 +232,12 @@ class HomeController
     {
         // Obtener parámetros de búsqueda
         $query = $_GET['q'] ?? '';
-        $city = $_GET['city'] ?? '';
+        $provinceId = $_GET['province'] ?? '';
+        $districtId = $_GET['district'] ?? '';
         $gender = $_GET['gender'] ?? '';
+
+        // Para compatibilidad con la vista actual
+        $city = $_GET['city'] ?? '';
 
         // Validar género
         if (!empty($gender) && !in_array($gender, ['female', 'male', 'trans'])) {
@@ -241,7 +245,7 @@ class HomeController
         }
 
         // Verificar si hay términos de búsqueda
-        if (empty($query) && empty($city) && empty($gender)) {
+        if (empty($query) && empty($provinceId) && empty($city) && empty($gender)) {
             redirect('/');
             exit;
         }
@@ -252,22 +256,29 @@ class HomeController
         $offset = ($page - 1) * $limit;
 
         // Realizar búsqueda
-        $searchResults = Profile::search($query, $city, $gender, $limit, $offset);
-        $totalResults = Profile::countSearch($query, $city, $gender);
+        $searchResults = Profile::search($query, $provinceId, $districtId, $gender, $limit, $offset);
+        $totalResults = Profile::countSearch($query, $provinceId, $districtId, $gender);
 
         // Calcular total de páginas
         $totalPages = ceil($totalResults / $limit);
 
-        // Obtener ciudades para filtro
+        // Obtener provincias para filtro
         $provinces = Profile::getAvailableProvinces();
+
+        // Debug - agregar esto temporalmente para ver qué datos tienes
+        error_log("Search Results Count: " . count($searchResults));
+        error_log("Total Results: " . $totalResults);
+        error_log("Query: " . $query . ", Gender: " . $gender);
 
         // Título de la página
         $pageTitle = 'Resultados de búsqueda';
         $pageHeader = 'Resultados de búsqueda';
 
-        // Renderizar vista
+        // Define la ruta al archivo de vista específica
+        $viewFile = __DIR__ . '/../views/home/search.php';
+
+        // Renderizar vista principal (que incluirá el contenido específico)
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/home/search.php';
     }
 
     /**
@@ -293,7 +304,6 @@ class HomeController
         // Define la ruta al archivo de vista específica
         $viewFile = __DIR__ . '/../views/home/terms.php';
         require_once __DIR__ . '/../views/layouts/main.php';
-        
     }
 
     /**
@@ -304,8 +314,8 @@ class HomeController
         $pageTitle = 'Política de Privacidad';
         $pageHeader = 'Política de Privacidad';
 
+        $viewFile = __DIR__ . '/../views/home/privacy.php';
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/home/privacy.php';
     }
 
     /**
@@ -316,8 +326,8 @@ class HomeController
         $pageTitle = 'Contacto';
         $pageHeader = 'Contacto';
 
+        $viewFile = __DIR__ . '/../views/home/contact.php';
         require_once __DIR__ . '/../views/layouts/main.php';
-        require_once __DIR__ . '/../views/home/contact.php';
     }
 
     /**

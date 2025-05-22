@@ -454,67 +454,74 @@ class Profile
     {
         $conn = getDbConnection();
 
+        // Construir la consulta paso a paso
         $sql = "SELECT p.*, u.id as user_id, u.status as user_status, 
-            m.filename as main_photo,
-            prov.name as province_name,
-            dist.name as district_name
+                   m.filename as main_photo,
+                   prov.name as province_name,
+                   dist.name as district_name
             FROM profiles p
             JOIN users u ON p.user_id = u.id
             LEFT JOIN provinces prov ON p.province_id = prov.id
             LEFT JOIN districts dist ON p.district_id = dist.id
-            LEFT JOIN (
-                SELECT profile_id, filename 
-                FROM media 
-                WHERE media_type = 'photo' AND is_primary = TRUE
-                LIMIT 1
-            ) m ON m.profile_id = p.id
+            LEFT JOIN media m ON m.profile_id = p.id AND m.media_type = 'photo' AND m.is_primary = TRUE
             LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
             WHERE (u.status = 'active' OR s.id IS NOT NULL)";
 
         $params = [];
-        $conditions = [];
 
-        // Condición para búsqueda por texto
+        // Añadir condiciones una por una
         if (!empty($query)) {
-            $conditions[] = "(p.name LIKE ? OR p.description LIKE ?)";
-            $params[] = "%$query%";
-            $params[] = "%$query%";
+            $sql .= " AND (p.name LIKE ? OR p.description LIKE ?)";
+            $params[] = "%{$query}%";
+            $params[] = "%{$query}%";
         }
 
-        if (!empty($provinceId)) {
+        if (!empty($provinceId) && is_numeric($provinceId)) {
             $sql .= " AND p.province_id = ?";
-            $params[] = $provinceId;
+            $params[] = (int)$provinceId;
         }
 
-        if (!empty($districtId)) {
+        if (!empty($districtId) && is_numeric($districtId)) {
             $sql .= " AND p.district_id = ?";
-            $params[] = $districtId;
+            $params[] = (int)$districtId;
         }
 
-        // Condición para género
-        if (!empty($gender)) {
+        if (!empty($gender) && in_array($gender, ['female', 'male', 'trans'])) {
             $sql .= " AND p.gender = ?";
             $params[] = $gender;
         }
 
-        // Construir WHERE
-        $where = '';
-        if (!empty($conditions)) {
-            $where = 'AND ' . implode(' AND ', $conditions);
+        // Orden y límites
+        $sql .= " ORDER BY p.is_verified DESC, p.id DESC LIMIT ? OFFSET ?";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+
+        // Debug completo
+        error_log("=== DEBUG SEARCH ===");
+        error_log("Query: " . $query);
+        error_log("ProvinceId: " . $provinceId);
+        error_log("DistrictId: " . $districtId);
+        error_log("Gender: " . $gender);
+        error_log("SQL: " . $sql);
+        error_log("Params count: " . count($params));
+        error_log("Params: " . json_encode($params));
+
+        try {
+            $stmt = $conn->prepare($sql);
+            $result = $stmt->execute($params);
+
+            if (!$result) {
+                error_log("Execute failed: " . json_encode($stmt->errorInfo()));
+                return [];
+            }
+
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log("Exception in search: " . $e->getMessage());
+            error_log("SQL was: " . $sql);
+            error_log("Params were: " . json_encode($params));
+            return [];
         }
-
-        // Añadir límite y offset
-        $params[] = $limit;
-        $params[] = $offset;
-
-        $sql .= " ORDER BY p.is_verified DESC, s.id IS NOT NULL DESC, p.id DESC LIMIT ? OFFSET ?";
-        $params[] = $limit;
-        $params[] = $offset;
-
-        $stmt = $conn->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->fetchAll();
     }
 
     /**
@@ -570,49 +577,48 @@ class Profile
     /**
      * Cuenta resultados de búsqueda
      */
-    public static function countSearch($query, $city = '', $gender = '')
+    public static function countSearch($query = '', $provinceId = null, $districtId = null, $gender = null)
     {
         $conn = getDbConnection();
 
+        $sql = "SELECT COUNT(*) as total 
+            FROM profiles p
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
+            WHERE (u.status = 'active' OR s.id IS NOT NULL)";
+
         $params = [];
-        $conditions = [];
 
-        // Condición para búsqueda por texto
         if (!empty($query)) {
-            $conditions[] = "(p.name LIKE ? OR p.description LIKE ?)";
-            $params[] = "%$query%";
-            $params[] = "%$query%";
+            $sql .= " AND (p.name LIKE ? OR p.description LIKE ?)";
+            $params[] = "%{$query}%";
+            $params[] = "%{$query}%";
         }
 
-        // Condición para ciudad
-        if (!empty($city)) {
-            $conditions[] = "p.city = ?";
-            $params[] = $city;
+        if (!empty($provinceId) && is_numeric($provinceId)) {
+            $sql .= " AND p.province_id = ?";
+            $params[] = (int)$provinceId;
         }
 
-        // Condición para género
-        if (!empty($gender)) {
-            $conditions[] = "p.gender = ?";
+        if (!empty($districtId) && is_numeric($districtId)) {
+            $sql .= " AND p.district_id = ?";
+            $params[] = (int)$districtId;
+        }
+
+        if (!empty($gender) && in_array($gender, ['female', 'male', 'trans'])) {
+            $sql .= " AND p.gender = ?";
             $params[] = $gender;
         }
 
-        // Construir WHERE
-        $where = '';
-        if (!empty($conditions)) {
-            $where = 'AND ' . implode(' AND ', $conditions);
+        try {
+            $stmt = $conn->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetch();
+            return (int)($result['total'] ?? 0);
+        } catch (Exception $e) {
+            error_log("Exception in countSearch: " . $e->getMessage());
+            return 0;
         }
-
-        $sql = "SELECT COUNT(*) as total 
-                FROM profiles p
-                JOIN users u ON p.user_id = u.id
-                LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
-                WHERE (u.status = 'active' OR s.id IS NOT NULL) $where";
-
-        $stmt = $conn->prepare($sql);
-        $stmt->execute($params);
-        $result = $stmt->fetch();
-
-        return (int)$result['total'];
     }
 
     /**

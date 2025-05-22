@@ -87,7 +87,7 @@ class SmsService {
      * Envía un código de verificación
      */
     public function sendVerificationCode($to, $code) {
-        $appName = defined('APP_NAME') ? APP_NAME : 'Luvia';
+        $appName = defined('APP_NAME') ? APP_NAME : 'Erophia.com';
         $message = "Tu código de verificación para $appName es: $code. Válido por 24 horas.";
         return $this->sendSms($to, $message);
     }

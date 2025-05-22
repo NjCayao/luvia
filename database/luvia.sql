@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 21-05-2025 a las 00:21:42
+-- Tiempo de generación: 22-05-2025 a las 20:03:34
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.1.25
 
@@ -1977,9 +1977,9 @@ CREATE TABLE `profiles` (
 --
 
 INSERT INTO `profiles` (`id`, `user_id`, `name`, `gender`, `description`, `whatsapp`, `province_id`, `district_id`, `location`, `schedule`, `is_verified`, `views`, `whatsapp_clicks`, `created_at`, `updated_at`) VALUES
-(1, 2, 'María López', 'female', 'Hola, soy María. Ofrezco compañía de calidad para caballeros respetuosos. Contacta para más detalles.', '982226893', NULL, NULL, 'Miraflores', 'Lunes a Viernes: 10am - 8pm\r\nSábado: 12pm - 6pm', 1, 68, 0, '2025-05-14 19:38:05', '2025-05-20 18:51:16'),
-(2, 3, 'Juan Pérez', 'male', 'Soy Juan, ofrezco compañía masculina de calidad. Discreto y respetuoso.', '51952345678', NULL, NULL, 'San Isidro', 'Lunes a Sábado: 2pm - 10pm', 1, 0, 0, '2025-05-14 19:38:05', '2025-05-14 19:38:05'),
-(3, 4, 'Alex Vargas', 'trans', 'Hola, soy Alex. Bella trans ofreciendo experiencias inolvidables.', '51953456789', NULL, NULL, 'San Borja', 'Todos los días: 12pm - 12am', 0, 0, 0, '2025-05-14 19:38:05', '2025-05-16 00:39:00');
+(1, 2, 'María López', 'female', 'Hola, soy María. Ofrezco compañía de calidad para caballeros respetuosos. Contacta para más detalles.', '982226893', 1, 1, 'Miraflores', 'Lunes a Viernes: 10am - 8pm\r\nSábado: 12pm - 6pm', 1, 75, 0, '2025-05-14 19:38:05', '2025-05-22 02:03:32'),
+(2, 3, 'Juan Pérez', 'male', 'Soy Juan, ofrezco compañía masculina de calidad. Discreto y respetuoso.', '51952345678', 1, 1, 'San Isidro', 'Lunes a Sábado: 2pm - 10pm', 1, 0, 0, '2025-05-14 19:38:05', '2025-05-20 23:58:03'),
+(3, 4, 'Alex Vargas', 'trans', 'Hola, soy Alex. Bella trans ofreciendo experiencias inolvidables.', '51953456789', 1, 1, 'San Borja', 'Todos los días: 12pm - 12am', 0, 0, 0, '2025-05-14 19:38:05', '2025-05-20 23:58:08');
 
 -- --------------------------------------------------------
 
@@ -2267,7 +2267,7 @@ CREATE TABLE `subscriptions` (
 INSERT INTO `subscriptions` (`id`, `user_id`, `plan_id`, `payment_id`, `status`, `start_date`, `end_date`, `auto_renew`, `created_at`, `updated_at`) VALUES
 (1, 2, 1, NULL, 'active', '2025-05-14 14:38:22', '2025-06-23 14:38:22', 0, '2025-05-14 19:38:22', '2025-05-17 19:34:52'),
 (2, 5, 5, NULL, 'active', '2025-05-14 14:38:22', '2025-05-26 14:38:22', 0, '2025-05-14 19:38:22', '2025-05-17 19:35:14'),
-(3, 10, 1, NULL, 'trial', '2025-05-20 13:56:52', '2025-06-04 13:56:52', 0, '2025-05-20 18:56:52', '2025-05-20 18:56:52');
+(3, 12, 5, NULL, 'active', '2025-05-21 23:00:14', '2025-05-21 23:00:14', 0, '2025-05-21 21:00:51', '2025-05-21 21:04:51');
 
 -- --------------------------------------------------------
 
@@ -2296,12 +2296,12 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `phone`, `email`, `password`, `user_type`, `status`, `phone_verified`, `email_verified`, `verification_code`, `verification_expires`, `last_login`, `created_at`, `updated_at`) VALUES
-(1, '999999999', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'active', 1, 1, NULL, NULL, '2025-05-17 14:36:33', '2025-05-14 19:37:20', '2025-05-17 19:36:33'),
+(1, '999999999', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'active', 1, 1, NULL, NULL, '2025-05-21 15:57:59', '2025-05-14 19:37:20', '2025-05-21 20:57:59'),
 (2, '951234567', 'maria@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'advertiser', 'active', 1, 1, NULL, NULL, '2025-05-17 10:31:01', '2025-05-14 19:37:35', '2025-05-17 15:31:01'),
 (3, '952345678', 'juan@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'advertiser', 'active', 1, 1, NULL, NULL, NULL, '2025-05-14 19:37:35', '2025-05-14 19:37:35'),
 (4, '953456789', 'alex@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'advertiser', 'active', 1, 1, NULL, NULL, NULL, '2025-05-14 19:37:35', '2025-05-16 00:48:40'),
-(5, '959876543', 'cliente@gmail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'visitor', 'active', 1, 1, NULL, NULL, '2025-05-17 14:33:56', '2025-05-14 19:37:45', '2025-05-17 19:33:56'),
-(10, '51982226835', 'nilson.jhonny@gmail.com', '$2y$10$cFUsGEEIgbeXpkD7Gu7m2.YnCM1VBCKdXCiM/tSNHBxCfP4KBYPiC', 'advertiser', 'active', 1, 0, '878619', '2025-05-21 13:56:52', '2025-05-20 13:57:04', '2025-05-20 18:56:52', '2025-05-20 18:57:04');
+(5, '959876543', 'cliente@gmail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'visitor', 'active', 1, 1, NULL, NULL, '2025-05-20 20:54:45', '2025-05-14 19:37:45', '2025-05-21 01:54:45'),
+(12, '51958973136', 'emersoncayao@gmail.com', '$2y$10$TeryDe9Cb/wkpSLzeqrSwOXfonnQbITbbeUrFXnkuamKECjlg0pQ2', 'visitor', 'active', 1, 0, '751106', '2025-05-22 15:53:54', '2025-05-21 16:03:11', '2025-05-21 20:53:54', '2025-05-21 21:03:11');
 
 -- --------------------------------------------------------
 
@@ -2417,7 +2417,7 @@ ALTER TABLE `verification_logs`
 -- AUTO_INCREMENT de la tabla `districts`
 --
 ALTER TABLE `districts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3007;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2995;
 
 --
 -- AUTO_INCREMENT de la tabla `media`
@@ -2441,7 +2441,7 @@ ALTER TABLE `plans`
 -- AUTO_INCREMENT de la tabla `profiles`
 --
 ALTER TABLE `profiles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `provinces`
@@ -2453,7 +2453,7 @@ ALTER TABLE `provinces`
 -- AUTO_INCREMENT de la tabla `rates`
 --
 ALTER TABLE `rates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT de la tabla `stats`
@@ -2465,13 +2465,13 @@ ALTER TABLE `stats`
 -- AUTO_INCREMENT de la tabla `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de la tabla `verification_logs`

@@ -4,40 +4,50 @@
 // Información básica de la aplicación
 define('APP_NAME', 'Luvia');
 define('APP_VERSION', '1.0.0');
-// define('APP_URL', 'http://localhost/luvia/public'); 
 
-// Base URL sin "/public"
-define('PUBLIC_URL', 'http://localhost/luvia'); // Cambiar en producción
-define('APP_URL', PUBLIC_URL . '/public');
+// Detectar si estamos en producción basado en el dominio
+$isProduction = isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] === 'erophia.com';
 
+if ($isProduction) {
+    // Configuración para producción
+    define('APP_ENV', 'production');
+    define('APP_DEBUG', false);
+    define('PUBLIC_URL', 'http://localhost/luvia');
+    define('APP_URL', PUBLIC_URL . '/public');
+} else {
+    // Configuración para desarrollo
+    define('APP_ENV', 'development');
+    define('APP_DEBUG', true);
+    define('PUBLIC_URL', 'http://localhost/luvia');
+    define('APP_URL', PUBLIC_URL . '/public');
+}
 
-define('APP_ENV', 'development'); // 'development' o 'production'
-define('APP_DEBUG', true);  // Habilitar o deshabilitar el modo de depuración
-
-
-if (!defined('APP_URL')) {
-    // Para desarrollo, detectar automáticamente
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-    $domainName = $_SERVER['HTTP_HOST'];
-    $baseDir = dirname($_SERVER['SCRIPT_NAME']);
-    define('APP_URL', $protocol . $domainName . $baseDir);
+// Forzar HTTPS en producción
+if ($isProduction) {
+    // Verificar si la conexión no es HTTPS
+    if (!isset($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on') {
+        $redirectURL = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        header("Location: $redirectURL", true, 301);
+        exit();
+    }
 }
 
 // Configuración de zona horaria
 date_default_timezone_set('America/Lima');
 
 // Configuración de sesiones - DEBE ir ANTES de cualquier output o session_start()
-// Verificar si la sesión ya está iniciada para evitar advertencias
 if (session_status() === PHP_SESSION_NONE) {
     // Configurar opciones de sesión
     ini_set('session.cookie_httponly', 1);
     ini_set('session.use_only_cookies', 1);
-    if (APP_ENV === 'production') {
-        ini_set('session.cookie_secure', 1);
-    }
-    session_name('citasweb_session');
     
-    // Ahora sí iniciar la sesión
+    // En producción, forzar cookies seguras
+    if ($isProduction) {
+        ini_set('session.cookie_secure', 1);
+        ini_set('session.cookie_samesite', 'Strict');
+    }
+    
+    session_name('citasweb_session');
     session_start();
 }
 

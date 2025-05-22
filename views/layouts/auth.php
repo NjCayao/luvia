@@ -2,8 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">   
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="<?= url('img/favicon.png') ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= url('img/favicon.png') ?>">
+    
     <title><?= isset($pageTitle) ? $pageTitle . ' - ' . APP_NAME : APP_NAME ?></title>
+    <meta name="description" content="<?= isset($pageDescription) ? $pageDescription : 'Accede a tu cuenta en ' . APP_NAME ?>">
     
     <!-- Google Font -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
