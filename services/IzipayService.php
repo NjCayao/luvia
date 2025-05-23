@@ -1,5 +1,5 @@
 <?php
-// services/IzipayService.php - IMPLEMENTACIÓN CON REDIRECCIÓN EXTERNA
+// services/IzipayService.php - VERSIÓN CORREGIDA CON DEBUG COMPLETO
 
 require_once __DIR__ . '/../config/izipay.php';
 
@@ -11,23 +11,42 @@ class IzipayService {
     }
     
     /**
-     * Crea una sesión de pago y devuelve la URL de redirección
+     * Crea un FormToken para Izipay V4.0
      */
-    public function createPaymentSession($amount, $orderId, $userEmail, $description = '') {
-        error_log("=== IZIPAY REDIRECT SESSION ===");
-        error_log("Amount: $amount");
+    public function createFormToken($amount, $orderId, $userEmail, $description = '') {
+        error_log("=== IZIPAY SERVICE DEBUG START ===");
+        error_log("Amount: $amount PEN");
         error_log("Order ID: $orderId");
         error_log("User Email: $userEmail");
+        error_log("Description: $description");
         
-        // Convertir a céntimos
+        // Validar datos de entrada
+        if (empty($amount) || $amount <= 0) {
+            throw new Exception('Monto inválido: ' . $amount);
+        }
+        
+        if (empty($orderId)) {
+            throw new Exception('Order ID no puede estar vacío');
+        }
+        
+        if (empty($userEmail) || !filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception('Email inválido: ' . $userEmail);
+        }
+        
+        // Convertir a céntimos (Izipay requiere en céntimos)
         $amountCents = (int)($amount * 100);
+        error_log("Amount in cents: $amountCents");
         
-        // URLs de retorno completas
+        // URLs de retorno CORRECTAS
         $successUrl = getFullIzipayUrl('/pago/confirmacion');
         $failedUrl = getFullIzipayUrl('/pago/fallido');
         $ipnUrl = getFullIzipayUrl('/api/pago/ipn');
         
-        // Preparar datos para la API REST V4.0
+        error_log("Success URL: $successUrl");
+        error_log("Failed URL: $failedUrl");
+        error_log("IPN URL: $ipnUrl");
+        
+        // Preparar datos según documentación oficial de Izipay V4.0
         $requestData = [
             'amount' => $amountCents,
             'currency' => 'PEN',
@@ -35,83 +54,70 @@ class IzipayService {
             'customer' => [
                 'email' => $userEmail
             ],
-            'metadata' => [
-                'description' => $description
-            ],
-            // URLs de retorno
             'contrib' => [
                 'successUrl' => $successUrl,
-                'errorUrl' => $failedUrl,
+                'cancelUrl' => $failedUrl,
                 'ipnTargetUrl' => $ipnUrl
             ]
         ];
         
-        error_log("Request data: " . json_encode($requestData));
-        error_log("Success URL: " . $successUrl);
-        error_log("Failed URL: " . $failedUrl);
-        error_log("IPN URL: " . $ipnUrl);
-        
-        // Hacer petición a la API REST
-        $response = $this->makeApiRequest($requestData);
-        
-        if (!$response || !isset($response['answer']['webRedirectRequest'])) {
-            throw new Exception('Error al crear sesión de pago: ' . ($response['answer']['errorMessage'] ?? 'Respuesta inválida'));
+        // Agregar descripción si existe
+        if (!empty($description)) {
+            $requestData['metadata'] = [
+                'description' => $description
+            ];
         }
         
-        $redirectData = $response['answer']['webRedirectRequest'];
-        $paymentUrl = $redirectData['redirectURL'];
+        error_log("Request payload: " . json_encode($requestData, JSON_PRETTY_PRINT));
         
-        error_log("Payment URL generada: $paymentUrl");
-        error_log("=== END IZIPAY SESSION ===");
-        
-        return [
-            'paymentUrl' => $paymentUrl,
-            'redirectData' => $redirectData,
-            'orderId' => $orderId
-        ];
-    }
-    
-    /**
-     * Alternativa: Crear FormToken para redirección manual
-     */
-    public function createFormToken($amount, $orderId, $userEmail, $description = '') {
-        error_log("=== IZIPAY FORM TOKEN ===");
-        
-        // Convertir a céntimos
-        $amountCents = (int)($amount * 100);
-        
-        // URLs de retorno completas
-        $successUrl = getFullIzipayUrl('/pago/confirmacion');
-        $failedUrl = getFullIzipayUrl('/pago/fallido');
-        
-        // Preparar datos básicos
-        $requestData = [
-            'amount' => $amountCents,
-            'currency' => 'PEN',
-            'orderId' => $orderId,
-            'customer' => [
-                'email' => $userEmail
-            ]
-        ];
-        
+        // Hacer petición a la API
         $response = $this->makeApiRequest($requestData);
         
-        if (!$response || !isset($response['answer']['formToken'])) {
-            throw new Exception('Error al crear FormToken: ' . ($response['answer']['errorMessage'] ?? 'Respuesta inválida'));
+        // Validar respuesta
+        if (!$response) {
+            throw new Exception('Respuesta vacía del servidor de Izipay');
         }
         
-        $formToken = $response['answer']['formToken'];
+        error_log("Raw API Response: " . json_encode($response, JSON_PRETTY_PRINT));
         
-        // Construir URL de redirección manual
+        // Verificar estructura de respuesta
+        if (!isset($response['answer'])) {
+            throw new Exception('Estructura de respuesta inválida - falta "answer"');
+        }
+        
+        $answer = $response['answer'];
+        
+        // Verificar errores en la respuesta
+        if (isset($answer['errorCode']) && $answer['errorCode'] !== null) {
+            $errorMsg = 'Error de Izipay: ' . $answer['errorCode'];
+            if (isset($answer['errorMessage'])) {
+                $errorMsg .= ' - ' . $answer['errorMessage'];
+            }
+            if (isset($answer['detailedErrorMessage'])) {
+                $errorMsg .= ' (' . $answer['detailedErrorMessage'] . ')';
+            }
+            throw new Exception($errorMsg);
+        }
+        
+        // Verificar que tenemos el formToken
+        if (!isset($answer['formToken']) || empty($answer['formToken'])) {
+            throw new Exception('FormToken no recibido. Respuesta: ' . json_encode($answer));
+        }
+        
+        $formToken = $answer['formToken'];
+        
+        // Construir URL de pago
         $paymentUrl = $this->config['clientEndpoint'] . '/vads-payment/?kr-form-token=' . $formToken;
         
-        error_log("FormToken: $formToken");
+        error_log("FormToken creado exitosamente: " . substr($formToken, 0, 20) . "...");
         error_log("Payment URL: $paymentUrl");
-        error_log("=== END FORM TOKEN ===");
+        error_log("=== IZIPAY SERVICE DEBUG END ===");
         
         return [
             'formToken' => $formToken,
             'paymentUrl' => $paymentUrl,
+            'publicKey' => $this->config['publicKey'],
+            'clientEndpoint' => $this->config['clientEndpoint'],
             'successUrl' => $successUrl,
             'failedUrl' => $failedUrl,
             'orderId' => $orderId
@@ -119,80 +125,144 @@ class IzipayService {
     }
     
     /**
-     * Hace petición a la API REST de Izipay
+     * Realiza petición HTTP a la API de Izipay
      */
     private function makeApiRequest($data) {
         $url = $this->config['apiEndpoint'];
+        
+        // Verificar configuración
+        if (empty($this->config['username']) || empty($this->config['password'])) {
+            throw new Exception('Credenciales de Izipay no configuradas correctamente');
+        }
+        
+        // Preparar autenticación
         $auth = base64_encode($this->config['username'] . ':' . $this->config['password']);
         
+        // Headers CORREGIDOS según documentación
         $headers = [
             'Authorization: Basic ' . $auth,
             'Content-Type: application/json',
-            'Accept: application/json'
+            'Accept: application/json',
+            'User-Agent: ' . (APP_NAME ?? 'Luvia') . '/1.0'
         ];
         
-        error_log("API URL: $url");
+        error_log("=== HTTP REQUEST DEBUG ===");
+        error_log("URL: $url");
+        error_log("Username: " . $this->config['username']);
+        error_log("Password: " . substr($this->config['password'], 0, 10) . "...");
+        error_log("Auth header: Basic " . substr($auth, 0, 20) . "...");
+        error_log("Headers: " . implode(', ', $headers));
         
+        // Configurar cURL
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false); // No seguir redirecciones automáticamente
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($data),
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_VERBOSE => false,
+            CURLOPT_USERAGENT => (APP_NAME ?? 'Luvia') . '/1.0',
+            CURLOPT_FOLLOWLOCATION => false
+        ]);
         
+        // Ejecutar petición
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
         $error = curl_error($ch);
-        curl_close($ch);
         
         error_log("HTTP Code: $httpCode");
-        error_log("Response: $response");
+        error_log("Content-Type: $contentType");
+        error_log("Response length: " . strlen($response));
         
+        curl_close($ch);
+        
+        // Verificar errores de cURL
         if ($error) {
-            throw new Exception("Error CURL: $error");
+            error_log("cURL Error: $error");
+            throw new Exception("Error de conexión: $error");
+        }
+        
+        // Log de la respuesta (limitada para no saturar logs)
+        if (strlen($response) > 1000) {
+            error_log("Response (truncated): " . substr($response, 0, 1000) . "...");
+        } else {
+            error_log("Full Response: $response");
+        }
+        
+        // Verificar código de respuesta HTTP
+        if ($httpCode === 406) {
+            error_log("ERROR 406: Not Acceptable - Posibles causas:");
+            error_log("1. Headers incorrectos");
+            error_log("2. Credenciales inválidas");
+            error_log("3. Datos del request inválidos");
+            error_log("4. URL endpoint incorrecta");
+            
+            // Analizar respuesta para más detalles
+            if (!empty($response)) {
+                if (strpos($response, 'cookies') !== false) {
+                    throw new Exception('Error 406: Problema con cookies/sesión de Izipay');
+                } else if (strpos($response, 'authentication') !== false) {
+                    throw new Exception('Error 406: Problema de autenticación con Izipay');
+                } else {
+                    throw new Exception('Error 406: ' . substr($response, 0, 200));
+                }
+            } else {
+                throw new Exception('Error 406: Not Acceptable - Verificar configuración de Izipay');
+            }
+        }
+        
+        if ($httpCode === 401) {
+            throw new Exception('Error 401: Credenciales de Izipay inválidas');
+        }
+        
+        if ($httpCode === 403) {
+            throw new Exception('Error 403: Acceso denegado por Izipay');
         }
         
         if ($httpCode !== 200) {
             throw new Exception("Error HTTP $httpCode: $response");
         }
         
+        // Verificar que la respuesta sea JSON válido
         $decoded = json_decode($response, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception("Error decodificando JSON: " . json_last_error_msg());
+            throw new Exception("Respuesta JSON inválida: " . json_last_error_msg() . ". Respuesta: " . substr($response, 0, 200));
         }
+        
+        error_log("=== HTTP REQUEST SUCCESS ===");
         
         return $decoded;
     }
     
     /**
-     * Procesa la notificación IPN
+     * Procesa notificaciones IPN de Izipay
      */
     public function processIpnNotification($requestBody, $headers) {
         error_log("=== IPN NOTIFICATION ===");
         error_log("Request body: $requestBody");
+        error_log("Headers: " . print_r($headers, true));
         
-        // Verificar que tenemos datos
         if (empty($requestBody)) {
             throw new Exception('IPN body vacío');
         }
         
-        // Decodificar datos JSON
         $data = json_decode($requestBody, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('IPN JSON inválido');
+            throw new Exception('IPN JSON inválido: ' . json_last_error_msg());
         }
         
-        // Verificar firma si está presente
-        if (isset($headers['kr-hash'])) {
-            if (!$this->verifyHash($headers['kr-hash'], $requestBody)) {
-                throw new Exception('Firma IPN inválida');
-            }
+        // Verificar firma HMAC si está presente
+        $krHash = $headers['kr-hash'] ?? $headers['KR-HASH'] ?? null;
+        if ($krHash && !$this->verifyHash($krHash, $requestBody)) {
+            throw new Exception('Firma IPN inválida');
         }
         
-        // Extraer información de la transacción
         $orderDetails = $data['orderDetails'] ?? [];
         $transactionDetails = $data['transactionDetails'] ?? [];
         
@@ -200,48 +270,30 @@ class IzipayService {
         $status = $data['orderStatus'] ?? 'UNKNOWN';
         
         // Mapear estado
-        switch ($status) {
-            case 'PAID':
-            case 'AUTHORISED':
-                $mappedStatus = 'COMPLETED';
-                break;
-            case 'UNPAID':
-            case 'REFUSED':
-            case 'CANCELLED':
-                $mappedStatus = 'FAILED';
-                break;
-            case 'WAITING_AUTHORISATION':
-            case 'UNDER_VERIFICATION':
-                $mappedStatus = 'PROCESSING';
-                break;
-            default:
-                $mappedStatus = 'FAILED';
-        }
+        $mappedStatus = match($status) {
+            'PAID', 'AUTHORISED' => 'COMPLETED',
+            'UNPAID', 'REFUSED', 'CANCELLED' => 'FAILED',
+            'WAITING_AUTHORISATION', 'UNDER_VERIFICATION' => 'PROCESSING',
+            default => 'FAILED'
+        };
         
+        error_log("Mapped status: $mappedStatus for order: $orderId");
         error_log("=== END IPN ===");
         
         return [
             'status' => $mappedStatus,
             'orderId' => $orderId,
             'transactionDetails' => $transactionDetails,
-            'orderDetails' => $orderDetails
+            'orderDetails' => $orderDetails,
+            'errorMessage' => $data['errorMessage'] ?? null
         ];
     }
     
     /**
-     * Verifica la firma de un hash (para IPN)
+     * Verifica firma HMAC
      */
     public function verifyHash($hash, $data) {
         $calculatedHash = hash_hmac('sha256', $data, $this->config['hmacKey']);
         return hash_equals($calculatedHash, $hash);
-    }
-    
-    // Métodos de compatibilidad
-    public function createCardPaymentSession($amount, $orderId, $userEmail, $description = '') {
-        return $this->createFormToken($amount, $orderId, $userEmail, $description);
-    }
-    
-    public function createYapePaymentSession($amount, $orderId, $userEmail, $description = '') {
-        return $this->createFormToken($amount, $orderId, $userEmail, $description);
     }
 }

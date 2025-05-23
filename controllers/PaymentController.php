@@ -43,6 +43,7 @@ class PaymentController
     }
 
     // Nuevo método: Procesar sesión de pago - REEMPLAZA LOS MÉTODOS ANTERIORES
+    // Método simplificado: Procesar sesión de pago
     public function processPaymentSession()
     {
         header('Content-Type: application/json');
@@ -67,7 +68,6 @@ class PaymentController
 
         // Validar plan
         $plan = Plan::getById($planId);
-
         if (!$plan) {
             echo json_encode(['error' => 'Plan inválido']);
             exit;
@@ -80,38 +80,62 @@ class PaymentController
         $orderId = 'LUV-' . time() . '-' . $user['id'] . '-' . rand(1000, 9999);
 
         try {
+            // Log para debugging
+            error_log("=== IZIPAY PAYMENT SESSION START ===");
+            error_log("User ID: " . $user['id']);
+            error_log("Plan: " . $plan['name'] . " (ID: $planId)");
+            error_log("Order ID: $orderId");
+            error_log("Amount: " . $plan['price'] . " PEN");
+
             // Crear registro de pago
             $paymentId = Payment::create([
                 'user_id' => $user['id'],
                 'plan_id' => $planId,
                 'amount' => $plan['price'],
                 'currency' => 'PEN',
-                'payment_method' => 'card',
+                'payment_method' => 'izipay', // Izipay maneja los métodos internamente
                 'payment_status' => 'pending',
                 'order_id' => $orderId
             ]);
 
-            // Crear sesión en Izipay usando la nueva API
+            error_log("Payment record created with ID: $paymentId");
+
+            // Descripción para Izipay
+            $description = 'Plan ' . $plan['name'] . ' - ' . $plan['duration'] . ' días - ' . APP_NAME;
+
+            // Crear FormToken usando Izipay
             $session = $this->izipayService->createFormToken(
                 $plan['price'],
                 $orderId,
                 $user['email'],
-                'Plan ' . $plan['name'] . ' - ' . $plan['duration'] . ' días'
+                $description
             );
 
-            // Actualizar pago con datos de la sesión
+            error_log("Izipay FormToken created successfully");
+
+            // Actualizar pago con session ID
             Payment::update($paymentId, [
-                'izipay_session_id' => $session['formToken'] // Usar formToken como identificador
+                'izipay_session_id' => $session['formToken']
             ]);
+
+            error_log("Payment updated with session data");
+            error_log("=== PAYMENT SESSION SUCCESS ===");
 
             // Devolver respuesta exitosa
             echo json_encode([
                 'success' => true,
-                'session' => $session
+                'session' => $session,
+                'payment_id' => $paymentId,
+                'order_id' => $orderId
             ]);
+
         } catch (Exception $e) {
-            // Log del error
-            error_log('Error en sesión de pago: ' . $e->getMessage());
+            // Log detallado del error
+            error_log('=== PAYMENT SESSION ERROR ===');
+            error_log('Error message: ' . $e->getMessage());
+            error_log('Error file: ' . $e->getFile());
+            error_log('Error line: ' . $e->getLine());
+            error_log('Stack trace: ' . $e->getTraceAsString());
 
             // Actualizar pago si existe
             if (isset($paymentId)) {
@@ -119,12 +143,32 @@ class PaymentController
                     'payment_status' => 'failed',
                     'error_message' => $e->getMessage()
                 ]);
+                error_log("Payment $paymentId marked as failed");
             }
 
-            // Devolver error
+            // Personalizar mensaje de error para el usuario
+            $userMessage = 'Error al preparar el pago';
+            
+            if (strpos($e->getMessage(), 'CURL') !== false) {
+                $userMessage = 'Error de conexión. Verifica tu internet e intenta nuevamente';
+            } elseif (strpos($e->getMessage(), 'HTTP 401') !== false || strpos($e->getMessage(), 'HTTP 403') !== false) {
+                $userMessage = 'Error de autenticación con el procesador de pagos';
+            } elseif (strpos($e->getMessage(), 'HTTP 400') !== false) {
+                $userMessage = 'Datos de pago inválidos';
+            } elseif (strpos($e->getMessage(), 'HTTP 500') !== false) {
+                $userMessage = 'El servidor de pagos está temporalmente no disponible';
+            } elseif (strpos($e->getMessage(), 'JSON') !== false) {
+                $userMessage = 'Error en la comunicación con el procesador de pagos';
+            }
+
             echo json_encode([
                 'success' => false,
-                'error' => 'Error al procesar el pago: ' . $e->getMessage()
+                'error' => $userMessage,
+                'debug_info' => APP_DEBUG ? [
+                    'original_error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ] : null
             ]);
         }
 

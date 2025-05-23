@@ -62,26 +62,109 @@
 
     <?php   
     // SOLO para páginas de checkout (usar condición)
-
     $isCheckoutPage = strpos($_SERVER['REQUEST_URI'], '/pago/checkout/') !== false;
 
     if ($isCheckoutPage): ?>
         <!-- CSS de Izipay V4.0 -->
         <link rel="stylesheet" href="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css">
-
+        
         <!-- Script principal de Izipay V4.0 -->
-        <script src="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
+        <script 
+            src="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
             kr-public-key="<?php
                             require_once __DIR__ . '/../../config/izipay.php';
                             $config = getIzipayConfig();
-                            echo $config['publicKey'];
+                            echo htmlspecialchars($config['publicKey']);
                             ?>"
-            kr-post-url-success="<?= url('/pago/confirmacion') ?>"
-            kr-post-url-refused="<?= url('/pago/fallido') ?>">
+            kr-post-url-success="<?= htmlspecialchars(url('/pago/confirmacion')) ?>"
+            kr-post-url-refused="<?= htmlspecialchars(url('/pago/fallido')) ?>"
+            kr-language="es-ES">
         </script>
 
         <!-- Tema clásico de Izipay -->
         <script src="https://api.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic.js"></script>
+        
+        <style>
+        /* Estilos personalizados para el formulario de Izipay */
+        .kr-embedded {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .kr-payment-button {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+            color: white !important;
+            font-size: 1.125rem !important;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 0.375rem !important;
+            transition: all 0.15s ease-in-out !important;
+        }
+        
+        .kr-payment-button:hover {
+            background-color: #0056b3 !important;
+            border-color: #004085 !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        .kr-field {
+            margin-bottom: 1rem !important;
+        }
+        
+        .kr-field-label {
+            font-weight: 600 !important;
+            color: #495057 !important;
+            margin-bottom: 0.5rem !important;
+        }
+        
+        .kr-input {
+            width: 100% !important;
+            padding: 0.75rem !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 0.375rem !important;
+            font-size: 1rem !important;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+        }
+        
+        .kr-input:focus {
+            border-color: #007bff !important;
+            outline: 0 !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+        }
+        
+        .kr-error {
+            color: #dc3545 !important;
+            font-size: 0.875rem !important;
+            margin-top: 0.25rem !important;
+        }
+        
+        .kr-card-number-group {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 1rem !important;
+        }
+        
+        .kr-card-number {
+            flex: 1 1 100% !important;
+        }
+        
+        .kr-expiry {
+            flex: 1 1 calc(50% - 0.5rem) !important;
+        }
+        
+        .kr-security-code {
+            flex: 1 1 calc(50% - 0.5rem) !important;
+        }
+        
+        @media (max-width: 768px) {
+            .kr-card-number-group .kr-expiry,
+            .kr-card-number-group .kr-security-code {
+                flex: 1 1 100% !important;
+            }
+        }
+        </style>
     <?php endif; ?>
 
 
