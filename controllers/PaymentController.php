@@ -128,7 +128,6 @@ class PaymentController
                 'payment_id' => $paymentId,
                 'order_id' => $orderId
             ]);
-
         } catch (Exception $e) {
             // Log detallado del error
             error_log('=== PAYMENT SESSION ERROR ===');
@@ -148,7 +147,7 @@ class PaymentController
 
             // Personalizar mensaje de error para el usuario
             $userMessage = 'Error al preparar el pago';
-            
+
             if (strpos($e->getMessage(), 'CURL') !== false) {
                 $userMessage = 'Error de conexión. Verifica tu internet e intenta nuevamente';
             } elseif (strpos($e->getMessage(), 'HTTP 401') !== false || strpos($e->getMessage(), 'HTTP 403') !== false) {
@@ -394,5 +393,131 @@ class PaymentController
         }
 
         error_log("Subscription activated for user $userId with plan $planId");
+    }
+
+    // Nuevo método: Procesar con SDK Web (SÚPER SIMPLE)
+    public function processPaymentSessionSdkWeb()
+    {
+        header('Content-Type: application/json');
+
+        error_log("=== SDK WEB PAYMENT SESSION START ===");
+
+        try {
+            // Verificar usuario logueado
+            if (!isLoggedIn()) {
+                throw new Exception('Usuario no autenticado');
+            }
+
+            // Leer datos
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!$input || json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Datos JSON inválidos');
+            }
+
+            // Verificar CSRF
+            if (!isset($input['csrf_token']) || !verifyCsrfToken($input['csrf_token'])) {
+                throw new Exception('Token CSRF inválido');
+            }
+
+            $planId = $input['plan_id'] ?? 0;
+            $paymentMethod = $input['payment_method'] ?? 'card';
+
+            // Obtener plan y usuario
+            $plan = Plan::getById($planId);
+            if (!$plan) {
+                throw new Exception('Plan no encontrado');
+            }
+
+            $user = User::getById($_SESSION['user_id']);
+            if (!$user) {
+                throw new Exception('Usuario no encontrado');
+            }
+
+            // Generar Order ID
+            $orderId = 'SDK-' . time() . '-' . $user['id'] . '-' . rand(1000, 9999);
+
+            error_log("Plan: {$plan['name']}, Amount: {$plan['price']}, Method: $paymentMethod");
+            error_log("Order ID: $orderId");
+
+            // Crear registro de pago
+            $paymentId = Payment::create([
+                'user_id' => $user['id'],
+                'plan_id' => $planId,
+                'amount' => $plan['price'],
+                'currency' => 'PEN',
+                'payment_method' => $paymentMethod,
+                'payment_status' => 'pending',
+                'order_id' => $orderId
+            ]);
+
+            error_log("Payment record created: $paymentId");
+
+            // Cargar configuración del SDK Web
+            require_once __DIR__ . '/../config/izipay_sdk_web.php';
+
+            // Generar datos para el SDK
+            $description = "Plan {$plan['name']} - {$plan['duration']} días - " . (APP_NAME ?? 'Luvia');
+            $sdkSession = generateSdkFormToken($plan['price'], $orderId, $user['email'], $description);
+
+            // Actualizar pago con order ID
+            Payment::update($paymentId, [
+                'izipay_session_id' => $orderId
+            ]);
+
+            // URLs de retorno
+            $returnUrls = getSdkReturnUrls();
+
+            // Respuesta para el frontend
+            $response = [
+                'success' => true,
+                'session' => [
+                    'config' => $sdkSession['config'],
+                    'orderId' => $orderId,
+                    'amount' => $plan['price'],
+                    'amountCents' => (int)($plan['price'] * 100),
+                    'currency' => 'PEN',
+                    'customerEmail' => $user['email'],
+                    'description' => $description,
+                    'paymentMethod' => $paymentMethod,
+                    'returnUrls' => $returnUrls
+                ],
+                'payment_id' => $paymentId,
+                'debug' => [
+                    'method' => 'SDK_WEB',
+                    'environment' => IZIPAY_SDK_ENVIRONMENT,
+                    'timestamp' => date('Y-m-d H:i:s')
+                ]
+            ];
+
+            error_log("=== SDK WEB SESSION SUCCESS ===");
+            error_log("Response: " . json_encode($response));
+
+            echo json_encode($response);
+        } catch (Exception $e) {
+            error_log("=== SDK WEB SESSION ERROR ===");
+            error_log("Error: " . $e->getMessage());
+            error_log("Stack: " . $e->getTraceAsString());
+
+            // Actualizar pago como fallido si existe
+            if (isset($paymentId)) {
+                Payment::update($paymentId, [
+                    'payment_status' => 'failed',
+                    'error_message' => $e->getMessage()
+                ]);
+            }
+
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'debug' => [
+                    'method' => 'SDK_WEB',
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]
+            ]);
+        }
+
+        exit;
     }
 }

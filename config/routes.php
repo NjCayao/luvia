@@ -454,5 +454,12 @@ $routes = [
         'action' => 'processPaymentSession',
         'auth' => true,
         'method' => 'POST'
+    ],
+    // Nueva ruta para SDK Web de Izipay
+    '/pago/procesar-session-sdk' => [
+        'controller' => 'PaymentController',
+        'action' => 'processPaymentSessionSdkWeb',
+        'auth' => true,
+        'method' => 'POST'
     ]
 ];
